@@ -1,0 +1,19 @@
+{
+  "name": "EnchantCollisionDemo",
+  "version": "0.0.0",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-copy": "~0.4.0",
+    "grunt-contrib-clean": "~0.4.0",
+    "grunt-contrib-compress": "~0.4.3",
+    "grunt-contrib-uglify": "~0.2.0"
+  },
+  "engine": "engine",
+  "devroot": "dev/src",
+  "relroot": "release",
+  "uglified": "<%= pkg.relroot %>/app.min.js",
+  "sourceFiles": [
+    "<%= pkg.devroot %>/enchant.js",
+    "<%= pkg.devroot %>/main.js"
+  ]
+}
