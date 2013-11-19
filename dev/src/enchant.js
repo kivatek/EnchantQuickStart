@@ -1,7 +1,7 @@
 /**
- * enchant.js v0.6.3
+ * enchant.js v0.8.0
  * http://enchantjs.com
- * 
+ *
  * Copyright Ubiquitous Entertainment Inc.
  * Released under the MIT license.
  */
@@ -100,17 +100,15 @@ window.requestAnimationFrame =
         var lastTime = window.getTime();
         var frame = 1000 / 60;
         return function(func) {
-            var currentTime = window.getTime();
             var _id = setTimeout(function() {
-                func(window.getTime());
-            }, Math.max(0, lastTime + frame - currentTime));
-            lastTime = currentTime;
+                lastTime = window.getTime();
+                func(lastTime);
+            }, Math.max(0, lastTime + frame - window.getTime()));
             return _id;
         };
     }());
 
 /**
- [lang:ja]
  * グローバルにライブラリのクラスをエクスポートする.
  *
  * 引数に何も渡さない場合enchant.jsで定義されたクラス及びプラグインで定義されたクラス
@@ -124,37 +122,6 @@ window.requestAnimationFrame =
  *   enchant('ui'); // enchant.js本体のクラスとui.enchant.jsのクラスがエクスポートされる
  *
  * @param {...String} [modules] エクスポートするモジュール. 複数指定できる.
- [/lang]
- [lang:en]
- * Export the library classes globally.
- *
- * When no arguments are given, all classes defined in enchant.js as well as all classes defined in
- * plugins will be exported. When more than one argument is given, by default only classes defined
- * in enchant.js will be exported. When you wish to export plugin classes you must explicitly deliver
- * the plugin identifiers as arguments.
- *
- * @example
- *   enchant();     // All classes will be exported.
- *   enchant('');   // Only classes in enchant.js will be exported.
- *   enchant('ui'); // enchant.js classes and ui.enchant.js classes will be exported.
- *
- * @param {...String} [modules] Export module. Multiple designations possible.
- [/lang]
- [lang:de]
- * Globaler Export der Programmbibliotheken.
- *
- * Wenn keine Argument übergeben werden, werden alle Klassen die in enchant.js und in den Plugins
- * definiert sind exportiert. Falls mehr als ein Argument übergeben wurde, werden standardmäßig nur Klassen
- * die in enchant.js selbst definiert sind exporitert. Wenn auch Plugin Klassen exportiert werden sollen,
- * müssen die Plugin Bezeichner explizit als Argumente übergeben werden.
- *
- * @example
- *   enchant();     // alle Klassen werden exportiert.
- *   enchant('');   // nur Klassen die in enchant.js definiert sind werden exportiert.
- *   enchant('ui'); // enchant.js Klassen und ui.enchant.js Klassen werden exportiert.
- *
- * @param {...String} [modules] Module die exportiert werden sollen.
- [/lang]
  * @global
  * @type {Object}
  * @name enchant
@@ -194,7 +161,10 @@ var enchant = function(modules) {
         }
     }(enchant, ''));
 
-    window.Game = window.Core;
+    // issue 185
+    if (enchant.Class.getInheritanceTree(window.Game).length <= enchant.Class.getInheritanceTree(window.Core).length) {
+        window.Game = window.Core;
+    }
 
     if (modules != null && modules.length) {
         throw new Error('Cannot load module: ' + modules.join(', '));
@@ -237,26 +207,10 @@ window.addEventListener("message", function(msg, origin) {
 /**
  * @name enchant.Class
  * @class
- [lang:ja]
  * クラスのクラス.
  *
  * @param {Function} [superclass] 継承するクラス.
  * @param {*} definition クラス定義.
- [/lang]
- [lang:en]
- * A Class representing a class which supports inheritance.
- *
- * @param {Function} [superclass] The class from which the
- * new class will inherit the class definition.
- * @param {*} definition Class definition.
- [/lang]
- [lang:de]
- * Eine Klasse für Klassen, die Vererbung unterstützen.
- *
- * @param {Function} [superclass] Die Klasse, deren Klassendefinition
- * die neue Klasse erben wird.
- * @param {*} definition Klassendefinition.
- [/lang]
  * @constructor
  */
 enchant.Class = function(superclass, definition) {
@@ -264,7 +218,6 @@ enchant.Class = function(superclass, definition) {
 };
 
 /**
- [lang:ja]
  * クラスを作成する.
  *
  * ほかのクラスを継承したクラスを作成する場合, コンストラクタはデフォルトで
@@ -287,84 +240,6 @@ enchant.Class = function(superclass, definition) {
  *
  * @param {Function} [superclass] 継承するクラス.
  * @param {*} [definition] クラス定義.
- [/lang]
- [lang:en]
- * Create a class.
- *
- * When defining classes that inherit from other classes, the previous class is used as a base with
- * the superclass's constructor as default. When overriding the default constructor, it is necessary
- * to explicitly call the previous constructor to ensure a correct class initialization.
- *
- * @example
- *   var Ball = Class.create({ // Creates independent class.
- *       initialize: function(radius) { ... }, // Method definition.
- *       fall: function() { ... }
- *   });
- *
- *   var Ball = Class.create(Sprite);  // Creates a class inheriting from "Sprite"
- *   var Ball = Class.create(Sprite, { // Creates a class inheriting "Sprite"
- *       initialize: function(radius) { // Overwrites constructor
- *          Sprite.call(this, radius*2, radius*2); // Applies previous constructor.
- *          this.image = core.assets['ball.gif'];
- *       }
- *   });
- *
- * @param {Function} [superclass] The class from which the
- * new class will inherit the class definition.
- * @param {*} [definition] Class definition.
- [/lang]
- [lang:de]
- * Erstellt eine neue Klasse
- *
- * Wenn eine Klasse definiert wird, die von einer anderen Klasse erbt, wird der Konstruktor der
- * Basisklasse als Standard definiert. Sollte dieser Konstruktor in der neuen Klasse überschrieben
- * werden, sollte der vorherige Konstruktor explizit aufgerufen werden, um eine korrekte
- * Klasseninitialisierung sicherzustellen.
- *
- * @example
- *   var Ball = Class.create({ // definiert eine unabhängige Klasse.
- *       initialize: function(radius) { ... }, // Methodendefinitionen
- *       fall: function() { ... }
- *   });
- *
- *   var Ball = Class.create(Sprite);  // definiert eine Klasse die von "Sprite" erbt.
- *   var Ball = Class.create(Sprite, { // definiert eine Klasse die von "Sprite" erbt.
- *       initialize: function(radius) { // überschreibt den Standardkonstruktor.
- *          Sprite.call(this, radius*2, radius*2); // Aufruf des Konstruktors der Basisklasse.
- *          this.image = core.assets['ball.gif'];
- *       }
- *   });
- *
- * @param {Function} [superclass] The class from which the
- * new class will inherit the class definition.
- * @param {*} [definition] Class definition.
- [/lang]
- [lang:de]
- * Erstellt eine neue Klasse
- *
- * Wenn eine Klasse definiert wird, die von einer anderen Klasse erbt, wird der Konstruktor der
- * Basisklasse als Standard definiert. Sollte dieser Konstruktor in der neuen Klasse überschrieben
- * werden, sollte der vorherige Konstruktor explizit aufgerufen werden, um eine korrekte
- * Klasseninitialisierung sicherzustellen.
- * 
- * @example
- *   var Ball = Class.create({ // definiert eine unabhängige Klasse.
- *       initialize: function(radius) { ... }, // Methodendefinitionen
- *       fall: function() { ... }
- *   });
- *
- *   var Ball = Class.create(Sprite);  // definiert eine Klasse die von "Sprite" erbt.
- *   var Ball = Class.create(Sprite, { // definiert eine Klasse die von "Sprite" erbt.
- *       initialize: function(radius) { // überschreibt den Standardkonstruktor.
- *          Sprite.call(this, radius*2, radius*2); // Aufruf des Konstruktors der Basisklasse.
- *          this.image = core.assets['ball.gif'];
- *       }
- *   });
- *
- * @param {Function} [superclass] Die Klasse, deren Klassendefinition
- * die neue Klasse erben wird.
- * @param {*} definition Klassendefinition.
- [/lang]
  * @static
  */
 enchant.Class.create = function(superclass, definition) {
@@ -418,12 +293,7 @@ enchant.Class.create = function(superclass, definition) {
 };
 
 /**
- [lang:ja]
  * クラスの継承関係を取得する.
- [/lang]
- [lang:en]
- * Get the inheritance tree of this class.
- [/lang]
  * @param {ConstructorFunction}
  * @return {...ConstructorFunction}
  */
@@ -441,16 +311,8 @@ enchant.Class.getInheritanceTree = function(Constructor) {
 
 /**
  * @namespace
- [lang:ja]
  * enchant.js の環境変数.
  * new Core() を呼ぶ前に変更することで変更することで, 動作設定を変えることができる.
- [/lang]
- [lang:en]
- * Environment variable.
- [/lang]
- [lang:de]
- * Umgebungsvariable.
- [/lang]
  * @type {Object}
  */
 enchant.ENV = {
@@ -564,101 +426,39 @@ enchant.Event = enchant.Class.create({
     /**
      * @name enchant.Event
      * @class
-     [lang:ja]
      * DOM Event風味の独自イベント実装を行ったクラス.
      * ただしフェーズの概念はなし.
      * @param {String} type Eventのタイプ
-     [/lang]
-     [lang:en]
-     * A class for an independent implementation of events
-     * similar to DOM Events.
-     * However, it does not include phase concept.
-     * @param {String} type Event type.
-     [/lang]
-     [lang:de]
-     * Eine Klasse für eine unabhängige Implementierung von Ereignissen 
-     * (Events), ähnlich wie DOM Events.
-     * Jedoch wird das Phasenkonzept nicht unterstützt.
-     * @param {String} type Event Typ.
-     [/lang]
      * @constructs
      */
     initialize: function(type) {
         /**
-         [lang:ja]
          * イベントのタイプ.
-         [/lang]
-         [lang:en]
-         * The type of the event.
-         [/lang]
-         [lang:de]
-         * Typ des Ereignis.
-         [/lang]
          * @type {String}
          */
         this.type = type;
         /**
-         [lang:ja]
          * イベントのターゲット.
-         [/lang]
-         [lang:en]
-         * The target of the event.
-         [/lang]
-         [lang:de]
-         * Ziel des Ereignis.
-         [/lang]
          * @type {*}
          */
         this.target = null;
         /**
-         [lang:ja]
          * イベント発生位置のx座標.
-         [/lang]
-         [lang:en]
-         * The x coordinate of the events occurrence.
-         [/lang]
-         [lang:de]
-         * X Koordinate des Auftretens des Ereignis.
-         [/lang]
          * @type {Number}
          */
         this.x = 0;
         /**
-         [lang:ja]
          * イベント発生位置のy座標.
-         [/lang]
-         [lang:en]
-         * The y coordinate of the events occurrence.
-         [/lang]
-         [lang:de]
-         * Y Koordinate des Auftretens des Ereignis.
-         [/lang]
          * @type {Number}
          */
         this.y = 0;
         /**
-         [lang:ja]
          * イベントを発行したオブジェクトを基準とするイベント発生位置のx座標.
-         [/lang]
-         [lang:en]
-         * The event occurrences local coordinate systems x coordinates.
-         [/lang]
-         [lang:de]
-         * X Koordinate des lokalen Koordinatensystems des Auftretens des Ereignis.
-         [/lang]
          * @type {Number}
          */
         this.localX = 0;
         /**
-         [lang:ja]
          * イベントを発行したオブジェクトを基準とするイベント発生位置のy座標.
-         [/lang]
-         [lang:en]
-         * The event occurrences local coordinate systems y coordinates.
-         [/lang]
-         [lang:de]
-         * Y Koordinate des lokalen Koordinatensystems des Auftretens des Ereignis.
-         [/lang]
          * @type {Number}
          */
         this.localY = 0;
@@ -671,7 +471,6 @@ enchant.Event = enchant.Class.create({
 });
 
 /**
- [lang:ja]
  * Coreのロード完了時に発生するイベント.
  *
  * 画像のプリロードを行う場合ロードが完了するのを待ってゲーム開始時の処理を行う必要がある.
@@ -684,621 +483,281 @@ enchant.Event = enchant.Class.create({
  *      ... // ゲーム開始時の処理を記述
  *   };
  *   core.start();
- *
- [/lang]
- [lang:en]
- * An event dispatched upon completion of core loading.
- *
- * It is necessary to wait for loading to finish and to do initial processing when preloading images.
- * Issued object: {@link enchant.Core}
- *
- * @example
- *   var core = new Core(320, 320);
- *   core.preload('player.gif');
- *   core.onload = function() {
- *      ... // Describes initial core processing
- *   };
- *   core.start();
- *
- [/lang]
- [lang:de]
- * Ereignis, dass auftritt wenn das Laden des Spieles abgeschlossen wurde.
- *
- * Wenn Grafiken im voraus geladen werden ist es notwendig, auf dieses Ereignis zu warten bis mit
- * diesen gearbeitet werden kann. 
- * Objekt des Auftretens: {@link enchant.Core}
- *
- * @example
- *   var core = new Core(320, 320);
- *   core.preload('player.gif');
- *   core.onload = function() {
- *      ... // initialisierung des Spieles 
- *   };
- *   core.start();
- *
- [/lang]
  * @type {String}
  */
 enchant.Event.LOAD = 'load';
 
 /**
- [lang:ja]
+ * エラーの発生をCoreに伝える際に発生するイベント.
+ * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Surface}, {@link enchant.WebAudioSound}, {@link enchant.DOMSound}
+ */
+enchant.Event.ERROR = 'error';
+
+/**
+ * 表示サイズが変わったときに発生するイベント.
+ * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
+ @type {String}
+ */
+enchant.Event.CORE_RESIZE = 'coreresize';
+
+/**
  * Coreのロード進行中に発生するイベント.
- * プリロードする画像が一枚ロードされる度に発行される. 発行するオブジェクト: {@link enchant.Core}
- [/lang]
- [lang:en]
- * Events which are occurring during core loading.
- * Dispatched each time preloaded image is loaded. Issued object: {@link enchant.Core}
- [/lang]
- [lang:de]
- * Ereignis, welches während des Ladens des Spieles auftritt.
- * Das Ereignis tritt jedesmal auf, wenn eine im voraus geladene Grafik geladen wurde.
- * Objekt des Auftretens: {@link enchant.Core}
- [/lang]
+ * プリロードする画像が一枚ロードされる度に発行される. 発行するオブジェクト: {@link enchant.LoadingScene}
  * @type {String}
  */
 enchant.Event.PROGRESS = 'progress';
 
 /**
- [lang:ja]
  * フレーム開始時に発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Node}
- [/lang]
- [lang:en]
- * An event which is occurring when a new frame is beeing processed.
- * Issued object: {@link enchant.Core}, {@link enchant.Node}
- [/lang]
- [lang:de]
- * Ereignis, welches auftritt wenn ein neuer Frame bearbeitet wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Node}
- [/lang]
  * @type {String}
  */
 enchant.Event.ENTER_FRAME = 'enterframe';
 
 /**
- [lang:ja]
  * フレーム終了時に発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}
- [/lang]
- [lang:en]
- * An event which is occurring when the frame processing is about to end.
- * Issued object: {@link enchant.Core}
- [/lang]
- [lang:de]
- * Ereignis, welches auftritt wenn ein Frame beendet wird.
- * Objekt des Auftretens: {@link enchant.Core}
- [/lang]
  * @type {String}
  */
 enchant.Event.EXIT_FRAME = 'exitframe';
 
 /**
- [lang:ja]
  * Sceneが開始したとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Scene}
- [/lang]
- [lang:en]
- * Events occurring during Scene beginning.
- * Issued object: {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, dass auftritt wenn eine neue Szene
- * ({@link enchant.Scene}) beginnt.
- * Objekt des Auftretens: {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.ENTER = 'enter';
 
 /**
- [lang:ja]
  * Sceneが終了したとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Scene}
- [/lang]
- [lang:en]
- * Events occurring during Scene end.
- * Issued object: {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, dass auftritt wenn eine Szene
- * ({@link enchant.Scene}) endet.
- * Objekt des Auftretens: {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.EXIT = 'exit';
 
 /**
- [lang:ja]
  * Nodeに子が追加されたとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Group}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when a Child is getting added to a Node.
- * Issued object: {@link enchant.Group}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn ein Kindelement zu einem Node
- * hinzugefügt wird.
- * Objekt des Auftretens: {@link enchant.Group}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.CHILD_ADDED = 'childadded';
 
 /**
- [lang:ja]
  * NodeがGroupに追加されたとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Node}
- [/lang]
- [lang:en]
- * An event which is occurring when the Node is added to a Group.
- * Issued object: {@link enchant.Node}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der Node zu einer Gruppe
- * hinzugefügt wird.
- * Objekt des Auftretens: {@link enchant.Node}
- [/lang]
  * @type {String}
  */
 enchant.Event.ADDED = 'added';
 
 /**
- [lang:ja]
  * NodeがSceneに追加されたとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Node}
- [/lang]
- [lang:en]
- * An event which is occurring when the Node is added to a Scene.
- * Issued object: {@link enchant.Node}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der Node zu einer Szene
- * hinzugefügt wird.
- * Objekt des Auftretens: {@link enchant.Node}
- [/lang]
  * @type {String}
  */
 enchant.Event.ADDED_TO_SCENE = 'addedtoscene';
 
 /**
- [lang:ja]
  * Nodeから子が削除されたとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Group}, {@link enchant.Scene}
  * @type {String}
- [/lang]
- [lang:en]
- * An event which is occurring when a Child is removed from a Node.
- * Issued object: {@link enchant.Group}, {@link enchant.Scene}
- * @type {String}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn ein Kindelement von einem Node
- * entfernt wird.
- * Objekt des Auftretens: {@link enchant.Group}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.CHILD_REMOVED = 'childremoved';
 
 /**
- [lang:ja]
  * NodeがGroupから削除されたとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Node}
- [/lang]
- [lang:en]
- * An event which is occurring when the Node is deleted from a Group.
- * Issued object: {@link enchant.Node}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der Node aus einer Gruppe
- * entfernt wird.
- * Objekt des Auftretens: {@link enchant.Node}
- [/lang]
  * @type {String}
  */
 enchant.Event.REMOVED = 'removed';
 
 /**
- [lang:ja]
  * NodeがSceneから削除されたとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Node}
- [/lang]
- [lang:en]
- * An event which is occurring when the Node is deleted from a Scene.
- * Issued object: {@link enchant.Node}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der Node aus einer Szene
- * entfernt wird.
- * Objekt des Auftretens: {@link enchant.Node}
- [/lang]
  * @type {String}
  */
 enchant.Event.REMOVED_FROM_SCENE = 'removedfromscene';
 
 /**
- [lang:ja]
  * Nodeに対するタッチが始まったとき発生するイベント.
  * クリックもタッチとして扱われる. 発行するオブジェクト: {@link enchant.Node}
- [/lang]
- [lang:en]
- * An event occurring when a touch related to the Node has begun.
- * A click is also treated as touch. Issued object: {@link enchant.Node}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn ein Touch auf einen Node
- * beginnt. Klicks werden als Touch behandelt.
- * Objekt des Auftretens: {@link enchant.Node}
- [/lang]
  * @type {String}
  */
 enchant.Event.TOUCH_START = 'touchstart';
 
 /**
- [lang:ja]
  * Nodeに対するタッチが移動したとき発生するイベント.
  * クリックもタッチとして扱われる. 発行するオブジェクト: {@link enchant.Node}
- [/lang]
- [lang:en]
- * An event occurring when a touch related to the Node has been moved.
- * A click is also treated as touch. Issued object: {@link enchant.Node}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn ein Touch auf einen Node
- * bewegt wurde. Klicks werden als Touch behandelt.
- * Objekt des Auftretens: {@link enchant.Node}
- [/lang]
  * @type {String}
  */
 enchant.Event.TOUCH_MOVE = 'touchmove';
 
 /**
- [lang:ja]
  * Nodeに対するタッチが終了したとき発生するイベント.
  * クリックもタッチとして扱われる. 発行するオブジェクト: enchant.Node
- [/lang]
- [lang:en]
- * An event which is occurring when a touch related to the Node has ended.
- * A Click is also treated as touch. Issued object: enchant.Node
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn ein Touch auf einen Node
- * endet. Klicks werden als Touch behandelt.
- * Objekt des Auftretens: {@link enchant.Node}
- [/lang]
  * @type {String}
  */
 enchant.Event.TOUCH_END = 'touchend';
 
 /**
- [lang:ja]
  * Entityがレンダリングされるときに発生するイベント.
  * 発行するオブジェクト: {@link enchant.Entity}
- [/lang]
- [lang:en]
- * An event which is occurring when an Entity is rendered.
- * Issued object: {@link enchant.Entity}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn eine Entity
- * gerendert wird.
- * Objekt des Auftretens: {@link enchant.Entity}
- [/lang]
  * @type {String}
  */
 enchant.Event.RENDER = 'render';
 
 /**
- [lang:ja]
  * ボタン入力が始まったとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when a button is pressed.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn ein Knopf gedückt wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.INPUT_START = 'inputstart';
 
 /**
- [lang:ja]
  * ボタン入力が変化したとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when a button input changes.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn eine Knopfeingabe verändert wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.INPUT_CHANGE = 'inputchange';
 
 /**
- [lang:ja]
  * ボタン入力が終了したとき発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when a button input ends.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn eine Knopf losgelassen wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.INPUT_END = 'inputend';
 
 /**
- [lang:ja]
+ * 入力が変化したとき発生するイベント
+ * ボタン入力が変化したとき発生する内部的なイベント.
+ * 発行するオブジェクト: {@link enchant.InputSource}
+ * @type {String}
+ */
+enchant.Event.INPUT_STATE_CHANGED = 'inputstatechanged';
+
+/**
  * leftボタンが押された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the left button is pressed.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "Nach Links"-Knopf gedrückt wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.LEFT_BUTTON_DOWN = 'leftbuttondown';
 
 /**
- [lang:ja]
  * leftボタンが離された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the left button is released.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "Nach Links"-Knopf losgelassen wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.LEFT_BUTTON_UP = 'leftbuttonup';
 
 /**
- [lang:ja]
  * rightボタンが押された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the right button is pressed.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "Nach Rechts"-Knopf gedrückt wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.RIGHT_BUTTON_DOWN = 'rightbuttondown';
 
 /**
- [lang:ja]
  * rightボタンが離された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the right button is released.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "Nach Rechts"-Knopf losgelassen wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.RIGHT_BUTTON_UP = 'rightbuttonup';
 
 /**
- [lang:ja]
  * upボタンが押された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the up button is pressed.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "Nach Oben"-Knopf gedrückt wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.UP_BUTTON_DOWN = 'upbuttondown';
 
 /**
- [lang:ja]
  * upボタンが離された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the up button is released.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "Nach Oben"-Knopf losgelassen wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.UP_BUTTON_UP = 'upbuttonup';
 
 /**
- [lang:ja]
  * downボタンが離された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the down button is pressed.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "Nach Unten"-Knopf gedrückt wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.DOWN_BUTTON_DOWN = 'downbuttondown';
 
 /**
- [lang:ja]
  * downボタンが離された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the down button is released.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "Nach Unten"-Knopf losgelassen wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.DOWN_BUTTON_UP = 'downbuttonup';
 
 /**
- [lang:ja]
  * aボタンが押された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the a button is pressed.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "A"-Knopf gedrückt wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.A_BUTTON_DOWN = 'abuttondown';
 
 /**
- [lang:ja]
  * aボタンが離された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the a button is released.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "A"-Knopf losgelassen wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.A_BUTTON_UP = 'abuttonup';
 
 /**
- [lang:ja]
  * bボタンが押された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the b button is pressed.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "B"-Knopf gedrückt wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.B_BUTTON_DOWN = 'bbuttondown';
 
 /**
- [lang:ja]
  * bボタンが離された発生するイベント.
  * 発行するオブジェクト: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:en]
- * An event which is occurring when the b button is released.
- * Issued object: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
- [lang:de]
- * Ereignis, welchses auftritt wenn der "B"-Knopf losgelassen wird.
- * Objekt des Auftretens: {@link enchant.Core}, {@link enchant.Scene}
- [/lang]
  * @type {String}
  */
 enchant.Event.B_BUTTON_UP = 'bbuttonup';
 
 /**
- * [lang:ja]
  * アクションがタイムラインに追加された時に発行されるイベント
  * @type {String}
- * [/lang]
  */
 enchant.Event.ADDED_TO_TIMELINE = "addedtotimeline";
 
 /**
- * [lang:ja]
  * アクションがタイムラインから削除された時に発行されるイベント
  * looped が設定されている時も、アクションは一度タイムラインから削除されもう一度追加される
- * [/lang]
  * @type {String}
  */
 enchant.Event.REMOVED_FROM_TIMELINE = "removedfromtimeline";
 
 /**
- * [lang:ja]
  * アクションが開始された時に発行されるイベント
- * [/lang]
  * @type {String}
  */
 enchant.Event.ACTION_START = "actionstart";
 
 /**
- * [lang:ja]
  * アクションが終了するときに発行されるイベント
- * [/lang]
  * @type {String}
  */
 enchant.Event.ACTION_END = "actionend";
 
 /**
- * [lang:ja]
  * アクションが1フレーム経過するときに発行されるイベント
- * [/lang]
  * @type {String}
  */
 enchant.Event.ACTION_TICK = "actiontick";
 
 /**
- * [lang:ja]
  * アクションが追加された時に、タイムラインに対して発行されるイベント
- * [/lang]
  * @type {String}
  */
 enchant.Event.ACTION_ADDED = "actionadded";
 
 /**
- * [lang:ja]
  * アクションが削除された時に、タイムラインに対して発行されるイベント
- * [/lang]
  * @type {String}
  */
 enchant.Event.ACTION_REMOVED = "actionremoved";
@@ -1310,20 +769,8 @@ enchant.EventTarget = enchant.Class.create({
     /**
      * @name enchant.EventTarget
      * @class
-     [lang:ja]
      * DOM Event風味の独自イベント実装を行ったクラス.
      * ただしフェーズの概念はなし.
-     [/lang]
-     [lang:en]
-     * A class for an independent implementation of events
-     * similar to DOM Events.
-     * However, it does not include the phase concept.
-     [/lang]
-     [lang:de]
-     * Eine Klasse für eine unabhängige Implementierung von Ereignissen 
-     * (Events), ähnlich wie DOM Events.
-     * Jedoch wird das Phasenkonzept nicht unterstützt.
-     [/lang]
      * @extends {enchant.Event}
      * @constructs
      */
@@ -1331,24 +778,9 @@ enchant.EventTarget = enchant.Class.create({
         this._listeners = {};
     },
     /**
-     [lang:ja]
      * イベントリスナを追加する.
      * @param {String} type イベントのタイプ.
      * @param {function(e:enchant.Event)} listener 追加するイベントリスナ.
-     [/lang]
-     [lang:en]
-     * Add a new event listener which will be executed when the event
-     * is being dispatched.
-     * @param {String} type Type of the events.
-     * @param {function(e:enchant.Event)} listener Event listener to be added.
-     [/lang]
-     [lang:de]
-     * Fügt einen neuen Ereignisbeobachter hinzu, welcher beim Auftreten des
-     * Events ausgeführt wird.
-     * @param {String} type Ereignis Typ.
-     * @param {function(e:enchant.Event)} listener Der Ereignisbeobachter 
-     * der hinzugefügt wird.
-     [/lang]
      */
     addEventListener: function(type, listener) {
         var listeners = this._listeners[type];
@@ -1369,22 +801,9 @@ enchant.EventTarget = enchant.Class.create({
         this.addEventListener.apply(this, arguments);
     },
     /**
-     [lang:ja]
      * イベントリスナを削除する.
      * @param {String} type イベントのタイプ.
      * @param {function(e:enchant.Event)} listener 削除するイベントリスナ.
-     [/lang]
-     [lang:en]
-     * Delete an event listener.
-     * @param {String} type Type of the events.
-     * @param {function(e:enchant.Event)} listener Event listener to be deleted.
-     [/lang]
-     [lang:de]
-     * Entfernt einen Ereignisbeobachter.
-     * @param {String} type Ereignis Typ.
-     * @param {function(e:enchant.Event)} listener Der Ereignisbeobachter 
-     * der entfernt wird.
-     [/lang]
      */
     removeEventListener: function(type, listener) {
         var listeners = this._listeners[type];
@@ -1396,21 +815,8 @@ enchant.EventTarget = enchant.Class.create({
         }
     },
     /**
-     [lang:ja]
      * すべてのイベントリスナを削除する.
      * @param [String] type イベントのタイプ.
-     [/lang]
-     [lang:en]
-     * Clear all defined event listener for a given type.
-     * If no type is given, all listener will be removed.
-     * @param [String] type Type of the events.
-     [/lang]
-     [lang:de]
-     * Entfernt alle Ereignisbeobachter für einen Typ.
-     * Wenn kein Typ gegeben ist, werden alle 
-     * Ereignisbeobachter entfernt.
-     * @param [String] type Ereignis Typ.
-     [/lang]
      */
     clearEventListener: function(type) {
         if (type != null) {
@@ -1420,18 +826,8 @@ enchant.EventTarget = enchant.Class.create({
         }
     },
     /**
-     [lang:ja]
      * イベントを発行する.
      * @param {enchant.Event} e 発行するイベント.
-     [/lang]
-     [lang:en]
-     * Issue an event.
-     * @param {enchant.Event} e Event to be issued.
-     [/lang]
-     [lang:de]
-     * Löst ein Ereignis aus.
-     * @param {enchant.Event} e Ereignis das ausgelöst werden soll.
-     [/lang]
      */
     dispatchEvent: function(e) {
         e.target = this;
@@ -1462,7 +858,6 @@ enchant.EventTarget = enchant.Class.create({
         /**
          * @name enchant.Core
          * @class
-            [lang:ja]
          * アプリケーションのメインループ, シーンを管理するクラス.
          *
          * インスタンスは一つしか存在することができず, すでにインスタンスが存在する状態で
@@ -1471,28 +866,6 @@ enchant.EventTarget = enchant.Class.create({
          *
          * @param {Number} width 画面の横幅.
          * @param {Number} height 画面の高さ.
-         [/lang]
-         [lang:en]
-         * A class which is controlling the cores main loop and scenes.
-         *
-         * There can be only one instance at a time, when the constructor is executed
-         * with an instance present, the existing instance will be overwritten. The existing instance
-         * can be accessed from {@link enchant.Core.instance}.
-         *
-         * @param {Number} width The width of the core screen.
-         * @param {Number} height The height of the core screen.
-         [/lang]
-         [lang:de]
-         * Klasse, welche die Spielschleife und Szenen kontrolliert.
-         *
-         * Es kann immer nur eine Instanz geben und sollte der Konstruktor ausgeführt werden,
-         * obwohl bereits eine Instanz existiert, wird die vorherige Instanz überschrieben.
-         * Auf die aktuell existierende Instanz kann über die {@link enchant.Core.instance}
-         * Variable zugegriffen werden.
-         *
-         * @param {Number} width Die Breite des Spieles.
-         * @param {Number} height Die Höhe des Spieles.
-         [/lang]
          * @constructs
          * @extends enchant.EventTarget
          */
@@ -1510,52 +883,21 @@ enchant.EventTarget = enchant.Class.create({
             }
             core = enchant.Core.instance = this;
 
-            /**
-             [lang:ja]
-             * 画面の横幅.
-             [/lang]
-             [lang:en]
-             * The width of the core screen.
-             [/lang]
-             [lang:de]
-             * Breite des Spieles.
-             [/lang]
-             * @type {Number}
-             */
-            this.width = width || 320;
-            /**
-             [lang:ja]
-             * 画面の高さ.
-             [/lang]
-             [lang:en]
-             * The height of the core screen.
-             [/lang]
-             [lang:de]
-             * Höhe des Spieles.
-             [/lang]
-             * @type {Number}
-             */
-            this.height = height || 320;
-            /**
-             [lang:ja]
-             * 画面の表示倍率.
-             [/lang]
-             [lang:en]
-             * The scaling of the core rendering.
-             [/lang]
-             [lang:de]
-             * Skalierung der Spieldarstellung.
-             [/lang]
-             * @type {Number}
-             */
-            this.scale = 1;
+            this._calledTime = 0;
+            this._mousedownID = 0;
+            this._surfaceID = 0;
+            this._soundID = 0;
+
+            this._scenes = [];
+
+            width = width || 320;
+            height = height || 320;
 
             var stage = document.getElementById('enchant-stage');
+            var scale, sWidth, sHeight;
             if (!stage) {
                 stage = document.createElement('div');
                 stage.id = 'enchant-stage';
-//                stage.style.width = window.innerWidth + 'px';
-//                stage.style.height = window.innerHeight + 'px';
                 stage.style.position = 'absolute';
 
                 if (document.body.firstChild) {
@@ -1563,24 +905,23 @@ enchant.EventTarget = enchant.Class.create({
                 } else {
                     document.body.appendChild(stage);
                 }
-                this.scale = Math.min(
-                    window.innerWidth / this.width,
-                    window.innerHeight / this.height
+                scale = Math.min(
+                    window.innerWidth / width,
+                    window.innerHeight / height
                 );
-                this._pageX = 0;
-                this._pageY = 0;
+                this._pageX = stage.getBoundingClientRect().left;
+                this._pageY = stage.getBoundingClientRect().top;
             } else {
                 var style = window.getComputedStyle(stage);
-                width = parseInt(style.width, 10);
-                height = parseInt(style.height, 10);
-                if (width && height) {
-                    this.scale = Math.min(
-                        width / this.width,
-                        height / this.height
+                sWidth = parseInt(style.width, 10);
+                sHeight = parseInt(style.height, 10);
+                if (sWidth && sHeight) {
+                    scale = Math.min(
+                        sWidth / width,
+                        sHeight / height
                     );
                 } else {
-                    stage.style.width = this.width + 'px';
-                    stage.style.height = this.height + 'px';
+                    scale = 1;
                 }
                 while (stage.firstChild) {
                     stage.removeChild(stage.firstChild);
@@ -1591,82 +932,46 @@ enchant.EventTarget = enchant.Class.create({
                 this._pageX = Math.round(window.scrollX || window.pageXOffset + bounding.left);
                 this._pageY = Math.round(window.scrollY || window.pageYOffset + bounding.top);
             }
-            if (!this.scale) {
-                this.scale = 1;
-            }
             stage.style.fontSize = '12px';
             stage.style.webkitTextSizeAdjust = 'none';
+            stage.style.webkitTapHighlightColor = 'rgba(0, 0, 0, 0)';
             this._element = stage;
 
+            this.addEventListener('coreresize', this._oncoreresize);
+
+            this._width = width;
+            this._height = height;
+            this.scale = scale;
+
             /**
-             [lang:ja]
              * フレームレート.
-             [/lang]
-             [lang:en]
-             * The frame rate of the core.
-             [/lang]
-             [lang:de]
-             * Frame Rate des Spieles.
-             [/lang]
              * @type {Number}
              */
             this.fps = 30;
             /**
-             [lang:ja]
              * アプリの開始からのフレーム数.
-             [/lang]
-             [lang:en]
-             * The amount of frames since the core was started.
-             [/lang]
-             [lang:de]
-             * Anzahl der Frames seit dem Spielestart.
-             [/lang]
              * @type {Number}
              */
             this.frame = 0;
             /**
-             [lang:ja]
              * アプリが実行可能な状態かどうか.
-             [/lang]
-             [lang:en]
-             * Indicates if the core can be executed.
-             [/lang]
-             [lang:de]
-             * Zeigt an ob das Spiel ausgeführt werden kann.
-             [/lang]
              * @type {Boolean}
              */
             this.ready = false;
             /**
-             [lang:ja]
              * アプリが実行状態かどうか.
-             [/lang]
-             [lang:en]
-             * Indicates if the core is currently executed.
-             [/lang]
-             [lang:de]
-             * Zeigt an ob das Spiel derzeit ausgeführt wird.
-             [/lang]
              * @type {Boolean}
              */
             this.running = false;
             /**
-             [lang:ja]
              * ロードされた画像をパスをキーとして保存するオブジェクト.
-             [/lang]
-             [lang:en]
-             * Object which stores loaded objects with the path as key.
-             [/lang]
-             [lang:de]
-             * Geladene Objekte werden unter dem Pfad als Schlüssel in diesem Objekt abgelegt.
-             [/lang]
              * @type {Object.<String, Surface>}
              */
             this.assets = {};
             var assets = this._assets = [];
             (function detectAssets(module) {
-                if (module.assets instanceof Array) {
-                    [].push.apply(assets, module.assets);
+                if (module.assets) {
+                    enchant.Core.instance.preload(module.assets);
                 }
                 for (var prop in module) {
                     if (module.hasOwnProperty(prop)) {
@@ -1677,87 +982,25 @@ enchant.EventTarget = enchant.Class.create({
                 }
             }(enchant));
 
-            this._scenes = [];
             /**
-             [lang:ja]
              * 現在のScene. Sceneスタック中の一番上のScene.
-             [/lang]
-             [lang:en]
-             * The Scene which is currently displayed. This Scene is on top of Scene stack.
-             [/lang]
-             [lang:de]
-             * Die aktuell dargestellte Szene.
-             * Diese Szene befindet sich oben auf dem Stapelspeicher.
-             [/lang]
              * @type {enchant.Scene}
              */
             this.currentScene = null;
             /**
-             [lang:ja]
              * ルートScene. Sceneスタック中の一番下のScene.
-             [/lang]
-             [lang:en]
-             * The root Scene. The Scene at bottom of Scene stack.
-             [/lang]
-             [lang:de]
-             * Die Ursprungsszene.
-             * Diese Szene befindet sich unten auf dem Stapelspeicher.
-             [/lang]
              * @type {enchant.Scene}
              */
             this.rootScene = new enchant.Scene();
             this.pushScene(this.rootScene);
             /**
-             [lang:ja]
              * ローディング時に表示されるScene.
-             [/lang]
-             [lang:en]
-             * The Scene which is getting displayed during loading.
-             [/lang]
-             [lang:de]
-             * Die Szene, welche während des Ladevorgangs dargestellt wird.
-             [/lang]
              * @type {enchant.Scene}
              */
-            this.loadingScene = new enchant.Scene();
-            this.loadingScene.backgroundColor = '#000';
-            var barWidth = this.width * 0.4 | 0;
-            var barHeight = this.width * 0.05 | 0;
-            var border = barWidth * 0.03 | 0;
-            var bar = new enchant.Sprite(barWidth, barHeight);
-
-            bar.x = (this.width - barWidth) / 2;
-            bar.y = (this.height - barHeight) / 2;
-            var image = new enchant.Surface(barWidth, barHeight);
-            image.context.fillStyle = '#fff';
-            image.context.fillRect(0, 0, barWidth, barHeight);
-            image.context.fillStyle = '#000';
-            image.context.fillRect(border, border, barWidth - border * 2, barHeight - border * 2);
-            bar.image = image;
-            var progress = 0, _progress = 0;
-            this.addEventListener('progress', function(e) {
-                progress = e.loaded / e.total;
-                // avoid #167 https://github.com/wise9/enchant.js/issues/177
-                progress += 0.0;
-            });
-            bar.addEventListener('enterframe', function() {
-                _progress *= 0.9;
-                _progress += progress * 0.1;
-                image.context.fillStyle = '#fff';
-                image.context.fillRect(border, 0, (barWidth - border * 2) * _progress, barHeight);
-            });
-            this.loadingScene.addChild(bar);
-
-            this._calledTime = 0;
-
-            this._mousedownID = 0;
-            this._surfaceID = 0;
-            this._soundID = 0;
+            this.loadingScene = new enchant.LoadingScene();
 
             /**
-             * [lang:ja]
              * 一度でも game.start() が呼ばれたことがあるかどうか。
-             * [/lang]
              * @type {Boolean}
              * @private
              */
@@ -1767,28 +1010,21 @@ enchant.EventTarget = enchant.Class.create({
             this._offsetY = 0;
 
             /**
-             [lang:ja]
              * アプリに対する入力状態を保存するオブジェクト.
-             [/lang]
-             [lang:en]
-             * Object that saves the current input state for the core.
-             [/lang]
-             [lang:de]
-             * Objekt, welches den aktuellen Eingabestatus des Spieles speichert.
-             [/lang]
              * @type {Object.<String, Boolean>}
              */
             this.input = {};
+
+            this.keyboardInputManager = new enchant.KeyboardInputManager(window.document, this.input);
+            this.keyboardInputManager.addBroadcastTarget(this);
+            this._keybind = this.keyboardInputManager._binds;
+
             if (!enchant.ENV.KEY_BIND_TABLE) {
                 enchant.ENV.KEY_BIND_TABLE = {};
             }
-            this._keybind = enchant.ENV.KEY_BIND_TABLE;
-            this.pressedKeysNum = 0;
-            this._internalButtondownListeners = {};
-            this._internalButtonupListeners = {};
 
-            for (var prop in this._keybind) {
-                this.keybind(prop, this._keybind[prop]);
+            for (var prop in enchant.ENV.KEY_BIND_TABLE) {
+                this.keybind(prop, enchant.ENV.KEY_BIND_TABLE[prop]);
             }
 
             if (initial) {
@@ -1799,25 +1035,6 @@ enchant.EventTarget = enchant.Class.create({
                     if (enchant.ENV.PREVENT_DEFAULT_KEY_CODES.indexOf(e.keyCode) !== -1) {
                         e.preventDefault();
                         e.stopPropagation();
-                    }
-
-                    if (!core.running) {
-                        return;
-                    }
-                    var button = core._keybind[e.keyCode];
-                    if (button) {
-                        evt = new enchant.Event(button + 'buttondown');
-                        core.dispatchEvent(evt);
-                    }
-                }, true);
-                document.addEventListener('keyup', function(e) {
-                    if (!core.running) {
-                        return;
-                    }
-                    var button = core._keybind[e.keyCode];
-                    if (button) {
-                        evt = new enchant.Event(button + 'buttonup');
-                        core.dispatchEvent(evt);
                     }
                 }, true);
 
@@ -1953,7 +1170,61 @@ enchant.EventTarget = enchant.Class.create({
             }
         },
         /**
-         [lang:ja]
+         * 画面の横幅.
+         * @type {Number}
+         */
+        width: {
+            get: function() {
+                return this._width;
+            },
+            set: function(w) {
+                this._width = w;
+                this._dispatchCoreResizeEvent();
+            }
+        },
+        /**
+         * 画面の高さ.
+         * @type {Number}
+         */
+        height: {
+            get: function() {
+                return this._height;
+            },
+            set: function(h) {
+                this._height = h;
+                this._dispatchCoreResizeEvent();
+            }
+        },
+        /**
+         * 画面の表示倍率.
+         * @type {Number}
+         */
+        scale: {
+            get: function() {
+                return this._scale;
+            },
+            set: function(s) {
+                this._scale = s;
+                this._dispatchCoreResizeEvent();
+            }
+        },
+        _dispatchCoreResizeEvent: function() {
+            var e = new enchant.Event('coreresize');
+            e.width = this._width;
+            e.height = this._height;
+            e.scale = this._scale;
+            this.dispatchEvent(e);
+        },
+        _oncoreresize: function(e) {
+            this._element.style.width = Math.floor(this._width * this._scale) + 'px';
+            this._element.style.height = Math.floor(this._height * this._scale) + 'px';
+            var scene;
+            for (var i = 0, l = this._scenes.length; i < l; i++) {
+                scene = this._scenes[i];
+                scene.dispatchEvent(e);
+            }
+        },
+        /**
          * ファイルのプリロードを行う.
          *
          * プリロードを行うよう設定されたファイルはenchant.Core#startが実行されるとき
@@ -1975,153 +1246,113 @@ enchant.EventTarget = enchant.Class.create({
          *   core.start();
          *
          * @param {...String} assets プリロードする画像のパス. 複数指定できる.
-         [/lang]
-         [lang:en]
-         * Performs a file preload.
-         *
-         * Sets files which are to be preloaded. When {@link enchant.Core#start} is called the
-         * actual loading takes place. When all files are loaded, a {@link enchant.Event.LOAD} event
-         * is dispatched from the Core object. Depending on the type of the file different objects will be
-         * created and stored in {@link enchant.Core#assets} Variable.
-         * When an image file is loaded, an {@link enchant.Surface} is created. If a sound file is loaded, an
-         * {@link enchant.Sound} object is created. Otherwise it will be accessible as a string.
-         *
-         * In addition, because this Surface object used made with {@link enchant.Surface.load},
-         * direct object manipulation is not possible. Refer to the items of {@link enchant.Surface.load}
-         *
-         * @example
-         *   core.preload('player.gif');
-         *   core.onload = function() {
-         *      var sprite = new Sprite(32, 32);
-         *      sprite.image = core.assets['player.gif']; // Access via path
-         *      ...
-         *   };
-         *   core.start();
-         *
-         * @param {...String} assets Path of images to be preloaded. Multiple settings possible.
-         [/lang]
-         [lang:de]
-         * Lässt Dateien im voraus laden.
-         *
-         * Diese Methode setzt die Dateien die im voraus geladen werden sollen. Wenn {@link enchant.Core#start}
-         * aufgerufen wird, findet das tatsächliche laden der Resource statt. Sollten alle Dateien vollständig
-         * geladen sein, wird ein {@link enchant.Event.LOAD} Ereignis auf dem Core Objekt ausgelöst.
-         * Abhängig von den Dateien die geladen werden sollen, werden unterschiedliche Objekte erstellt und in
-         * dem {@link enchant.Core#assets} Feld gespeichert.
-         * Falls ein Bild geladen wird, wird ein {@link enchant.Surface} Objekt erstellt. Wenn es eine Ton Datei ist,
-         * wird ein {@link enchant.Sound} Objekt erstellt. Ansonsten kann auf die Datei über einen String zugegriffen werden.
-         *
-         * Da die Surface Objekte mittels {@link enchant.Surface.load} erstellt werden ist zusätlich ist zu beachten, dass
-         * eine direkte Objektmanipulation nicht möglich ist.
-         * Für diesen Fall ist auf die {@link enchant.Surface.load} Dokumentation zu verweisen.
-         *
-         * @example
-         *   core.preload('player.gif');
-         *   core.onload = function() {
-         *      var sprite = new Sprite(32, 32);
-         *      sprite.image = core.assets['player.gif']; // zugriff mittels Dateipfades
-         *      ...
-         *   };
-         *   core.start();
-         *
-         * @param {...String} assets Pfade zu den Dateien die im voraus geladen werden sollen.
-         * Mehrfachangaben möglich.
-         [/lang]
+         * @return {enchant.Core} this
          */
         preload: function(assets) {
+            var a;
             if (!(assets instanceof Array)) {
-                assets = Array.prototype.slice.call(arguments);
+                if (typeof assets === 'object') {
+                    a = [];
+                    for (var name in assets) {
+                        if (assets.hasOwnProperty(name)) {
+                            a.push([ assets[name], name ]);
+                        }
+                    }
+                    assets = a;
+                } else {
+                    assets = Array.prototype.slice.call(arguments);
+                }
             }
-            [].push.apply(this._assets, assets);
+            Array.prototype.push.apply(this._assets, assets);
+            return this;
         },
         /**
-         [lang:ja]
          * ファイルのロードを行う.
          *
          * @param {String} asset ロードするファイルのパス.
+         * @param {String} [alias] ロードするファイルに設定したい名前.
          * @param {Function} [callback] ファイルのロードが完了したときに呼び出される関数.
-         [/lang]
-         [lang:en]
-         * Loads a file.
-         *
-         * @param {String} asset File path of the resource to be loaded.
-         * @param {Function} [callback] Function called up when file loading is finished.
-         [/lang]
-         [lang:de]
-         * Laden von Dateien.
-         *
-         * @param {String} asset Pfad zu der Datei die geladen werden soll.
-         * @param {Function} [callback] Funktion die ausgeführt wird wenn das laden abgeschlossen wurde.
-         [/lang]
+         * @param {Function} [onerror] ファイルのロードに失敗したときに呼び出される関数.
          */
-        load: function(src, callback) {
-            if (callback == null) {
-                callback = function() {
-                };
+        load: function(src, alias, callback, onerror) {
+            var assetName, offset;
+            if (typeof arguments[1] === 'string') {
+                assetName = alias;
+                offset = 1;
+            } else {
+                assetName = src;
+                offset = 0;
             }
+            callback = arguments[1 + offset] || function() {};
+            onerror = arguments[2 + offset] || function() {};
 
             var ext = enchant.Core.findExt(src);
 
-            if (enchant.Core._loadFuncs[ext]) {
-                enchant.Core._loadFuncs[ext].call(this, src, callback, ext);
-            }
-            else {
-                var req = new XMLHttpRequest();
-                req.open('GET', src, true);
-                req.onreadystatechange = function(e) {
-                    if (req.readyState === 4) {
-                        if (req.status !== 200 && req.status !== 0) {
-                            throw new Error(req.status + ': ' + 'Cannot load an asset: ' + src);
-                        }
-
-                        var type = req.getResponseHeader('Content-Type') || '';
-                        if (type.match(/^image/)) {
-                            core.assets[src] = enchant.Surface.load(src, callback);
-                        } else if (type.match(/^audio/)) {
-                            core.assets[src] = enchant.Sound.load(src, type, callback);
-                        } else {
-                            core.assets[src] = req.responseText;
-                            callback();
-                        }
-                    }
+            return enchant.Deferred.next(function() {
+                var d = new enchant.Deferred();
+                var _callback = function(e) {
+                    d.call(e);
+                    callback.call(this, e);
                 };
-                req.send(null);
-            }
+                var _onerror = function(e) {
+                    d.fail(e);
+                    onerror.call(this, e);
+                };
+                if (enchant.Core._loadFuncs[ext]) {
+                    enchant.Core.instance.assets[assetName] = enchant.Core._loadFuncs[ext](src, ext, _callback, _onerror);
+                } else {
+                    var req = new XMLHttpRequest();
+                    req.open('GET', src, true);
+                    req.onreadystatechange = function() {
+                        if (req.readyState === 4) {
+                            if (req.status !== 200 && req.status !== 0) {
+                                // throw new Error(req.status + ': ' + 'Cannot load an asset: ' + src);
+                                var e = new enchant.Event('error');
+                                e.message = req.status + ': ' + 'Cannot load an asset: ' + src;
+                                _onerror.call(enchant.Core.instance, e);
+                            }
+
+                            var type = req.getResponseHeader('Content-Type') || '';
+                            if (type.match(/^image/)) {
+                                core.assets[assetName] = enchant.Surface.load(src, _callback, _onerror);
+                            } else if (type.match(/^audio/)) {
+                                core.assets[assetName] = enchant.Sound.load(src, type, _callback, _onerror);
+                            } else {
+                                core.assets[assetName] = req.responseText;
+                                _callback.call(enchant.Core.instance, new enchant.Event('laod'));
+                            }
+                        }
+                    };
+                    req.send(null);
+                }
+                return d;
+            });
         },
         /**
-         [lang:ja]
          * アプリを起動する.
          *
          * enchant.Core#fpsで設定されたフレームレートに従ってenchant.Core#currentSceneの
          * フレームの更新が行われるようになる. プリロードする画像が存在する場合はロードが
          * 始まりローディング画面が表示される.
-         [/lang]
-         [lang:en]
-         * Start the core.
-         *
-         * Obeying the frame rate set in {@link enchant.Core#fps}, the frame in
-         * {@link enchant.Core#currentScene} will be updated. If images to preload are present,
-         * loading will begin and the loading screen will be displayed.
-         [/lang]
-         [lang:de]
-         * Starte das Spiel
-         *
-         * Je nach der Frame Rate definiert in {@link enchant.Core#fps}, wird der Frame in der
-         * {@link enchant.Core#currentScene} aktualisiert. Sollten Dateien die im voraus geladen werden
-         * sollen vorhanden sein, beginnt das laden dieser Dateien und der Ladebildschirm wird dargestellt.
-         [/lang]
+         * @return {enchant.Deferred} Deferred
          */
-        start: function() {
+        start: function(deferred) {
             var onloadTimeSetter = function() {
                 this.frame = 0;
                 this.removeEventListener('load', onloadTimeSetter);
             };
             this.addEventListener('load', onloadTimeSetter);
 
-            if (!this._activated && this._assets.length) {
+            this.currentTime = window.getTime();
+            this.running = true;
+            this.ready = true;
+
+            if (!this._activated) {
+                this._activated = true;
                 if (enchant.ENV.SOUND_ENABLED_ON_MOBILE_SAFARI && !core._touched &&
                     (navigator.userAgent.indexOf('iPhone OS') !== -1 ||
                     navigator.userAgent.indexOf('iPad') !== -1)) {
+                    var d = new enchant.Deferred();
                     var scene = new enchant.Scene();
                     scene.backgroundColor = '#000';
                     var size = Math.round(core.width / 10);
@@ -2133,68 +1364,73 @@ enchant.EventTarget = enchant.Class.create({
                     var width = sprite.image.context.measureText('Touch to Start').width;
                     sprite.image.context.fillText('Touch to Start', (core.width - width) / 2, size - 1);
                     scene.addChild(sprite);
-                    document.addEventListener('touchstart', function() {
+                    document.addEventListener('mousedown', function waitTouch() {
+                        document.removeEventListener('mousedown', waitTouch);
                         core._touched = true;
                         core.removeScene(scene);
-                        core.start();
-                    }, true);
+                        core.start(d);
+                    }, false);
                     core.pushScene(scene);
-                    return;
+                    return d;
                 }
-
-                this._activated = true;
-                this.currentTime = window.getTime();
-                this.running = true;
-                this.ready = true;
-                this._requestNextFrame(0);
-
-                var o = {};
-                var assets = this._assets.filter(function(asset) {
-                    return asset in o ? false : o[asset] = true;
-                });
-                var loaded = 0,
-                    len = assets.length,
-                    loadFunc = function() {
-                        var e = new enchant.Event('progress');
-                        e.loaded = ++loaded;
-                        e.total = len;
-                        core.dispatchEvent(e);
-                        if (loaded === len) {
-                            core.removeScene(core.loadingScene);
-                            core.dispatchEvent(new enchant.Event('load'));
-                        }
-                    };
-
-                this.pushScene(this.loadingScene);
-                for (var i = 0; i < len; i++) {
-                    this.load(assets[i], loadFunc);
-                }
-            } else {
-                this.dispatchEvent(new enchant.Event('load'));
             }
+
+            this._requestNextFrame(0);
+
+            var ret = this._requestPreload()
+                .next(function() {
+                    enchant.Core.instance.loadingScene.dispatchEvent(new enchant.Event(enchant.Event.LOAD));
+                });
+
+            if (deferred) {
+                ret.next(function(arg) {
+                    deferred.call(arg);
+                })
+                .error(function(arg) {
+                    deferred.fail(arg);
+                });
+            }
+
+            return ret;
+        },
+        _requestPreload: function() {
+            var o = {};
+            var loaded = 0,
+                len = 0,
+                loadFunc = function() {
+                    var e = new enchant.Event('progress');
+                    e.loaded = ++loaded;
+                    e.total = len;
+                    core.loadingScene.dispatchEvent(e);
+                };
+            this._assets
+                .reverse()
+                .forEach(function(asset) {
+                    var src, name;
+                    if (asset instanceof Array) {
+                        src = asset[0];
+                        name = asset[1];
+                    } else {
+                        src = name = asset;
+                    }
+                    if (!o[name]) {
+                        o[name] = this.load(src, name, loadFunc);
+                        len++;
+                    }
+                }, this);
+
+            this.pushScene(this.loadingScene);
+            return enchant.Deferred.parallel(o);
         },
         /**
-         [lang:ja]
          * アプリをデバッグモードで開始する.
          *
          * enchant.Core.instance._debug フラグを true にすることでもデバッグモードをオンにすることができる
-         [/lang]
-         [lang:en]
-         * Begin core debug mode.
-         *
-         * Core debug mode can be set to on even if enchant.Core.instance._debug
-         * flag is already set to true.
-         [/lang]
-         [lang:de]
-         * Startet den Debug-Modus des Spieles.
-         *
-         * Auch wenn die enchant.Core.instance._debug Variable gesetzt ist,
-         * kann der Debug-Modus gestartet werden.
-         [/lang]
+         * @return {enchant.Deferred} Deferred
          */
         debug: function() {
             this._debug = true;
-            this.start();
+            return this.start();
         },
         actualFps: {
             get: function() {
@@ -2202,26 +1438,27 @@ enchant.EventTarget = enchant.Class.create({
             }
         },
         /**
-         * [lang:ja]
          * 次のフレームの実行を要求する.
          * @param {Number} requestAnimationFrameを呼び出すまでの遅延時間.
-         * [/lang]
          * @private
          */
         _requestNextFrame: function(delay) {
             if (!this.ready) {
                 return;
             }
-            setTimeout(function() {
-                var core = enchant.Core.instance;
-                core._calledTime = window.getTime();
-                window.requestAnimationFrame(core._callTick);
-            }, delay);
+            if (this.fps >= 60 || delay <= 16) {
+                this._calledTime = window.getTime();
+                window.requestAnimationFrame(this._callTick);
+            } else {
+                setTimeout(function() {
+                    var core = enchant.Core.instance;
+                    core._calledTime = window.getTime();
+                    window.requestAnimationFrame(core._callTick);
+                }, Math.max(0, delay));
+            }
         },
         /**
-         * [lang:ja]
          * Core#_tickを呼び出す.
-         * [/lang]
          * @private
          */
         _callTick: function(time) {
@@ -2232,7 +1469,7 @@ enchant.EventTarget = enchant.Class.create({
             var now = window.getTime();
             var elapsed = e.elapsed = now - this.currentTime;
 
-            this._actualFps = e.elapsed > 0 ? (1000 / e.elapsed) : 0;
+            this._actualFps = elapsed > 0 ? (1000 / elapsed) : 0;
 
             var nodes = this.currentScene.childNodes.slice();
             var push = Array.prototype.push;
@@ -2251,6 +1488,7 @@ enchant.EventTarget = enchant.Class.create({
 
             this.dispatchEvent(new enchant.Event('exitframe'));
             this.frame++;
+            now = window.getTime();
             this.currentTime = now;
             this._requestNextFrame(1000 / this.fps - (now - this._calledTime));
         },
@@ -2258,64 +1496,26 @@ enchant.EventTarget = enchant.Class.create({
             return window.getTime();
         },
         /**
-         [lang:ja]
          * アプリを停止する.
          *
          * フレームは更新されず, ユーザの入力も受け付けなくなる.
          * enchant.Core#startで再開できる.
-         [/lang]
-         [lang:en]
-         * Stops the core.
-         *
-         * The frame will not be updated, and player input will not be accepted anymore.
-         * Core can be restarted using {@link enchant.Core#start}.
-         [/lang]
-         [lang:de]
-         * Stoppt das Spiel.
-         *
-         * Der Frame wird nicht mehr aktualisiert und Spielereingaben werden nicht
-         * mehr akzeptiert. Das spiel kann mit der {@link enchant.Core#start} Methode
-         * erneut gestartet werden.
-         [/lang]
          */
         stop: function() {
             this.ready = false;
             this.running = false;
         },
         /**
-         [lang:ja]
          * アプリを一時停止する.
          *
          * フレームは更新されず, ユーザの入力は受け付ける.
          * enchant.Core#startで再開できる.
-         [/lang]
-         [lang:en]
-         * Stops the core.
-         *
-         * The frame will not be updated, and player input will not be accepted anymore.
-         * Core can be started again using {@link enchant.Core#start}.
-         [/lang]
-         [lang:de]
-         * Stoppt das Spiel.
-         *
-         * Der Frame wird nicht mehr aktualisiert und Spielereingaben werden nicht
-         * mehr akzeptiert. Das spiel kann mit der {@link enchant.Core#start} Methode
-         * erneut gestartet werden.
-         [/lang]
          */
         pause: function() {
             this.ready = false;
         },
         /**
-         [lang:ja]
          * アプリを再開する。
-         [/lang]
-         [lang:en]
-         * Resumes the core.
-         [/lang]
-         [lang:de]
-         * Setzt die Ausführung des Spieles fort.
-         [/lang]
          */
         resume: function() {
             if (this.ready) {
@@ -2328,7 +1528,6 @@ enchant.EventTarget = enchant.Class.create({
         },
 
         /**
-         [lang:ja]
          * 新しいSceneに移行する.
          *
          * Sceneはスタック状に管理されており, 表示順序もスタックに積み上げられた順に従う.
@@ -2337,29 +1536,6 @@ enchant.EventTarget = enchant.Class.create({
          *
          * @param {enchant.Scene} scene 移行する新しいScene.
          * @return {enchant.Scene} 新しいScene.
-         [/lang]
-         [lang:en]
-         * Switch to a new Scene.
-         *
-         * Scenes are controlled using a stack, and the display order also obeys that stack order.
-         * When {@link enchant.Core#pushScene} is executed, the Scene can be brought to the top of stack.
-         * Frames will be updated in the Scene which is on the top of the stack.
-         *
-         * @param {enchant.Scene} scene The new scene to be switched to.
-         * @return {enchant.Scene} The new Scene.
-         [/lang]
-         [lang:de]
-         * Wechselt zu einer neuen Szene.
-         *
-         * Szenen werden durch einen Stapelspeicher kontrolliert und die Darstellungsreihenfolge
-         * folgt ebenfalls der Ordnung des Stapelspeichers.
-         * Wenn die {@link enchant.Core#pushScene} Methode ausgeführt wird, wird die Szene auf dem
-         * Stapelspeicher oben abgelegt. Der Frame wird immer in der Szene ganz oben auf dem Stapelspeicher
-         * aktualisiert.
-         *
-         * @param {enchant.Scene} scene Die neue Szene zu der gewechselt werden soll.
-         * @return {enchant.Scene} Die neue Szene.
-         [/lang]
          */
         pushScene: function(scene) {
             this._element.appendChild(scene._element);
@@ -2371,33 +1547,12 @@ enchant.EventTarget = enchant.Class.create({
             return this._scenes.push(scene);
         },
         /**
-         [lang:ja]
          * 現在のSceneを終了させ前のSceneに戻る.
          *
          * Sceneはスタック状に管理されており, 表示順序もスタックに積み上げられた順に従う.
          * enchant.Core#popSceneを行うとスタックの一番上のSceneを取り出すことができる.
          *
          * @return {enchant.Scene} 終了させたScene.
-         [/lang]
-         [lang:en]
-         * Ends the current Scene, return to the previous Scene.
-         *
-         * Scenes are controlled using a stack, and the display order also obeys that stack order.
-         * When {@link enchant.Core#popScene} is executed, the Scene at the top of the stack
-         * will be removed and returned.
-         *
-         * @return {enchant.Scene} Ended Scene.
-         [/lang]
-         [lang:de]
-         * Beendet die aktuelle Szene und wechselt zu der vorherigen Szene.
-         *
-         * Szenen werden durch einen Stapelspeicher kontrolliert und die Darstellungsreihenfolge
-         * folgt ebenfalls der Ordnung des Stapelspeichers.
-         * Wenn die {@link enchant.Core#popScene} Methode ausgeführt wird, wird die Szene oben auf dem
-         * Stapelspeicher entfernt und liefert diese als Rückgabewert.
-         *
-         * @return {enchant.Scene} Die Szene, die beendet wurde.
-         [/lang]
          */
         popScene: function() {
             if (this.currentScene === this.rootScene) {
@@ -2410,62 +1565,24 @@ enchant.EventTarget = enchant.Class.create({
             return this._scenes.pop();
         },
         /**
-         [lang:ja]
          * 現在のSceneを別のSceneにおきかえる.
          *
          * enchant.Core#popScene, enchant.Core#pushSceneを同時に行う.
          *
          * @param {enchant.Scene} scene おきかえるScene.
          * @return {enchant.Scene} 新しいScene.
-         [/lang]
-         [lang:en]
-         * Overwrites the current Scene with a new Scene.
-         *
-         * {@link enchant.Core#popScene}, {@link enchant.Core#pushScene} are executed after
-         * each other to replace to current scene with the new scene.
-         *
-         * @param {enchant.Scene} scene The new scene which will replace the previous scene.
-         * @return {enchant.Scene} The new Scene.
-         [/lang]
-         [lang:de]
-         * Ersetzt die aktuelle Szene durch eine neue Szene.
-         *
-         * {@link enchant.Core#popScene}, {@link enchant.Core#pushScene} werden nacheinander
-         * ausgeführt um die aktuelle Szene durch die neue zu ersetzen.
-         *
-         * @param {enchant.Scene} scene Die neue Szene, welche die aktuelle Szene ersetzen wird.
-         * @return {enchant.Scene} Die neue Szene.
-         [/lang]
          */
         replaceScene: function(scene) {
             this.popScene();
             return this.pushScene(scene);
         },
         /**
-         [lang:ja]
          * Scene削除する.
          *
          * Sceneスタック中からSceneを削除する.
          *
          * @param {enchant.Scene} scene 削除するScene.
          * @return {enchant.Scene} 削除したScene.
-         [/lang]
-         [lang:en]
-         * Removes a Scene.
-         *
-         * Removes a Scene from the Scene stack.
-         *
-         * @param {enchant.Scene} scene Scene to be removed.
-         * @return {enchant.Scene} The deleted Scene.
-         [/lang]
-         [lang:de]
-         * Entfernt eine Szene.
-         *
-         * Entfernt eine Szene aus dem Szenen-Stapelspeicher.
-         *
-         * @param {enchant.Scene} scene Die Szene die entfernt werden soll.
-         * @return {enchant.Scene} Die entfernte Szene.
-         [/lang]
          */
         removeScene: function(scene) {
             if (this.currentScene === scene) {
@@ -2481,121 +1598,69 @@ enchant.EventTarget = enchant.Class.create({
                 }
             }
         },
+        _buttonListener: function(e) {
+            this.currentScene.dispatchEvent(e);
+        },
         /**
-         [lang:ja]
          * キーバインドを設定する.
          *
          * @param {Number} key キーバインドを設定するキーコード.
          * @param {String} button 割り当てるボタン.
-         [/lang]
-         [lang:en]
-         * Set a key binding.
-         *
-         * @param {Number} key Key code for the button which will be bound.
-         * @param {String} button The enchant.js button (left, right, up, down, a, b).
-         [/lang]
-         [lang:de]
-         * Bindet eine Taste.
-         *
-         * @param {Number} key Der Tastencode der Taste die gebunden werden soll.
-         * @param {String} button Der enchant.js Knopf (left, right, up, down, a, b).
-         [/lang]
+         * @return {enchant.Core} this
          */
         keybind: function(key, button) {
-            this._keybind[key] = button;
-            var onxbuttondown = function(e) {
-                var inputEvent;
-                if (!this.input[button]) {
-                    this.input[button] = true;
-                    inputEvent = new enchant.Event((this.pressedKeysNum++) ? 'inputchange' : 'inputstart');
-                    this.dispatchEvent(inputEvent);
-                    this.currentScene.dispatchEvent(inputEvent);
-                }
-                this.currentScene.dispatchEvent(e);
-            };
-            var onxbuttonup = function(e) {
-                var inputEvent;
-                if (this.input[button]) {
-                    this.input[button] = false;
-                    inputEvent = new enchant.Event((--this.pressedKeysNum) ? 'inputchange' : 'inputend');
-                    this.dispatchEvent(inputEvent);
-                    this.currentScene.dispatchEvent(inputEvent);
-                }
-                this.currentScene.dispatchEvent(e);
-            };
-
-            this.addEventListener(button + 'buttondown', onxbuttondown);
-            this.addEventListener(button + 'buttonup', onxbuttonup);
-
-            this._internalButtondownListeners[key] = onxbuttondown;
-            this._internalButtonupListeners[key] = onxbuttonup;
+            this.keyboardInputManager.keybind(key, button);
+            this.addEventListener(button + 'buttondown', this._buttonListener);
+            this.addEventListener(button + 'buttonup', this._buttonListener);
+            return this;
         },
         /**
-         [lang:ja]
          * キーバインドを削除する.
-         *
          * @param {Number} key 削除するキーコード.
-         [/lang]
-         [lang:en]
-         * Delete a key binding.
-         *
-         * @param {Number} key Key code that want to delete.
-         [/lang]
-         [lang:de]
-         * Entbindet eine Taste.
-         *
-         * @param {Number} key Der Tastencode der entfernt werden soll.
-         [/lang]
+         * @return {enchant.Core} this
          */
         keyunbind: function(key) {
-            if (!this._keybind[key]) {
-                return;
-            }
-            var buttondowns = this._internalButtondownListeners;
-            var buttonups = this._internalButtonupListeners;
-
-            this.removeEventListener(key + 'buttondown', buttondowns);
-            this.removeEventListener(key + 'buttonup', buttonups);
-
-            delete buttondowns[key];
-            delete buttonups[key];
-
-            delete this._keybind[key];
+            var button = this._keybind[key];
+            this.keyboardInputManager.keyunbind(key);
+            this.removeEventListener(button + 'buttondown', this._buttonListener);
+            this.removeEventListener(button + 'buttonup', this._buttonListener);
+            return this;
+        },
+        changeButtonState: function(button, bool) {
+            this.keyboardInputManager.changeState(button, bool);
         },
         /**
-         [lang:ja]
          * Core#start が呼ばれてから経過した時間を取得する
          * @return {Number} 経過した時間 (秒)
-         [/lang]
-         [lang:en]
-         * Get the elapsed core time (not actual) from when core.start was called.
-         * @return {Number} The elapsed time (seconds)
-         [/lang]
-         [lang:de]
-         * Liefert die vergange Spielzeit (keine reale) die seit dem Aufruf von core.start
-         * vergangen ist.
-         * @return {Number} Die vergangene Zeit (Sekunden)
-         [/lang]
          */
         getElapsedTime: function() {
             return this.frame / this.fps;
         }
     });
 
+    /**
+     * 拡張子に対応したアセットのロード関数.
+     * ロード関数はファイルのパス, 拡張子, コールバックを引数に取り,
+     * 対応したクラスのインスタンスを返す必要がある.
+     * コールバックはEvent.LOADとEvent.ERRORでハンドルする.
+     * @static
+     * @private
+     * @type {Object.<String, Function>}
+     */
     enchant.Core._loadFuncs = {};
     enchant.Core._loadFuncs['jpg'] =
         enchant.Core._loadFuncs['jpeg'] =
             enchant.Core._loadFuncs['gif'] =
                 enchant.Core._loadFuncs['png'] =
-                    enchant.Core._loadFuncs['bmp'] = function(src, callback) {
-                        this.assets[src] = enchant.Surface.load(src, callback);
+                    enchant.Core._loadFuncs['bmp'] = function(src, ext, callback, onerror) {
+                        return enchant.Surface.load(src, callback, onerror);
                     };
     enchant.Core._loadFuncs['mp3'] =
         enchant.Core._loadFuncs['aac'] =
             enchant.Core._loadFuncs['m4a'] =
                 enchant.Core._loadFuncs['wav'] =
-                    enchant.Core._loadFuncs['ogg'] = function(src, callback, ext) {
-                        this.assets[src] = enchant.Sound.load(src, 'audio/' + ext, callback);
+                    enchant.Core._loadFuncs['ogg'] = function(src, ext, callback, onerror) {
+                        return enchant.Sound.load(src, 'audio/' + ext, callback, onerror);
                     };
 
     /**
@@ -2617,15 +1682,7 @@ enchant.EventTarget = enchant.Class.create({
     };
 
     /**
-     [lang:ja]
      * 現在のCoreインスタンス.
-     [/lang]
-     [lang:en]
-     * The Current Core instance.
-     [/lang]
-     [lang:de]
-     * Die aktuelle Instanz des Spieles.
-     [/lang]
      * @type {enchant.Core}
      * @static
      */
@@ -2638,25 +1695,327 @@ enchant.EventTarget = enchant.Class.create({
  */
 enchant.Game = enchant.Core;
 /**
+ * @scope enchant.InputManager.prototype
+ */
+enchant.InputManager = enchant.Class.create(enchant.EventTarget, {
+    /**
+     * @name enchant.InputManager
+     * @class
+     * 入力を管理するためのクラス.
+     * @param {*} valueStore 入力の状態を保持させるオブジェクト.
+     * @param {*} [source=this] イベントに付加される入力のソース.
+     * @constructs
+     * @extends enchant.EventTarget
+     */
+    initialize: function(valueStore, source) {
+        enchant.EventTarget.call(this);
+
+        /**
+         * 入力の変化を通知する対象を保持する配列.
+         * @type {enchant.EventTarget[]}
+         */
+        this.broadcastTarget = [];
+        /**
+         * 入力の状態を保持する連想配列.
+         * @type {Object}
+         */
+        this.valueStore = valueStore;
+        /**
+         * イベントに付加される入力のソース.
+         * @type {Object}
+         */
+        this.source = source || this;
+
+        this._binds = {};
+
+        this._stateHandler = function(e) {
+            var id = e.source.identifier;
+            var name = this._binds[id];
+            this.changeState(name, e.data);
+        }.bind(this);
+    },
+    /**
+     * 特定の入力に名前をつける.
+     * 入力はフラグとイベントで監視できるようになる.
+     * @param {enchant.InputSource} inputSource {@link enchant.InputSource}のインスタンス.
+     * @param {String} name 入力につける名前.
+     */
+    bind: function(inputSource, name) {
+        inputSource.addEventListener(enchant.Event.INPUT_STATE_CHANGED, this._stateHandler);
+        this._binds[inputSource.identifier] = name;
+    },
+    /**
+     * 入力のバインドを解除する.
+     * @param {enchant.InputSource} inputSource {@link enchant.InputSource}のインスタンス.
+     */
+    unbind: function(inputSource) {
+        inputSource.removeEventListener(enchant.Event.INPUT_STATE_CHANGED, this._stateHandler);
+        delete this._binds[inputSource.identifier];
+    },
+    /**
+     * 入力の変化を通知する対象を追加する.
+     * @param {enchant.EventTarget} eventTarget イベントの通知を設定したい対象.
+     */
+    addBroadcastTarget: function(eventTarget) {
+        var i = this.broadcastTarget.indexOf(eventTarget);
+        if (i === -1) {
+            this.broadcastTarget.push(eventTarget);
+        }
+    },
+    /**
+     * 入力の変化を通知する対象を削除する.
+     * @param {enchant.EventTarget} eventTarget イベントの通知を削除したい対象.
+     */
+    removeBroadcastTarget: function(eventTarget) {
+        var i = this.broadcastTarget.indexOf(eventTarget);
+        if (i !== -1) {
+            this.broadcastTarget.splice(i, 1);
+        }
+    },
+    /**
+     * イベントを{@link enchant.InputManager#broadcastTarget}に発行する.
+     * @param {enchant.Event} e イベント.
+     */
+    broadcastEvent: function(e) {
+        var target = this.broadcastTarget;
+        for (var i = 0, l = target.length; i < l; i++) {
+            target[i].dispatchEvent(e);
+        }
+    },
+    /**
+     * 入力の状態を変更する.
+     * @param {String} name 入力の名前.
+     * @param {*} data 入力の状態.
+     */
+    changeState: function(name, data) {
+    }
+});
+
+/**
+ * @scope enchant.InputSource.prototype
+ */
+enchant.InputSource = enchant.Class.create(enchant.EventTarget, {
+    /**
+     * @name enchant.InputSource
+     * @class
+     * 任意の入力をラップするクラス.
+     * @param {String} identifier 入力のid.
+     * @constructs
+     * @extends enchant.EventTarget
+     */
+    initialize: function(identifier) {
+        enchant.EventTarget.call(this);
+        this.identifier = identifier;
+    },
+    /**
+     * 入力の状態変更をイベントで通知する.
+     * @param {*} data 新しい状態.
+     */
+    notifyStateChange: function(data) {
+        var e = new enchant.Event(enchant.Event.INPUT_STATE_CHANGED);
+        e.data = data;
+        e.source = this;
+        this.dispatchEvent(e);
+    }
+});
+
+/**
+ * @scope enchant.BinaryInputManager.prototype
+ */
+enchant.BinaryInputManager = enchant.Class.create(enchant.InputManager, {
+    /**
+     * @name enchant.BinaryInputManager
+     * @class
+     * 入力を管理するためのクラス.
+     * @param {*} flagStore 入力のフラグを保持させるオブジェクト.
+     * @param {String} activeEventNameSuffix イベント名の接尾辞.
+     * @param {String} inactiveEventNameSuffix イベント名の接尾辞.
+     * @param {*} [source=this] イベントに付加される入力のソース.
+     * @constructs
+     * @extends enchant.InputManager
+     */
+    initialize: function(flagStore, activeEventNameSuffix, inactiveEventNameSuffix, source) {
+        enchant.InputManager.call(this, flagStore, source);
+        /**
+         * アクティブな入力の数.
+         * @type {Number}
+         */
+        this.activeInputsNum = 0;
+        /**
+         * BinaryInputManagerが発行するイベント名の接尾辞.
+         * @type {String}
+         */
+        this.activeEventNameSuffix = activeEventNameSuffix;
+        /**
+         * BinaryInputManagerが発行するイベント名の接尾辞.
+         * @type {String}
+         */
+        this.inactiveEventNameSuffix = inactiveEventNameSuffix;
+    },
+    /**
+     * @param {enchant.BinaryInputSource} inputSource {@link enchant.InputSource}のインスタンス.
+     * @param {String} name 入力につける名前.
+     * @see enchant.InputManager#bind
+     */
+    bind: function(binaryInputSource, name) {
+        enchant.InputManager.prototype.bind.call(this, binaryInputSource, name);
+        this.valueStore[name] = false;
+    },
+    /**
+     * @param {enchant.BinaryInputSource} inputSource {@link enchant.InputSource}のインスタンス.
+     * @see enchant.InputManager#unbind
+     */
+    unbind: function(binaryInputSource) {
+        enchant.InputManager.prototype.unbind.call(this, binaryInputSource);
+        var name = this._binds[binaryInputSource.identifier];
+        delete this.valueStore[name];
+    },
+    /**
+     * 入力の状態を変更する.
+     * @param {String} name 入力の名前.
+     * @param {Boolean} bool 入力の状態.
+     */
+    changeState: function(name, bool) {
+        if (bool) {
+            this._down(name);
+        } else {
+            this._up(name);
+        }
+    },
+    _down: function(name) {
+        var inputEvent;
+        if (!this.valueStore[name]) {
+            this.valueStore[name] = true;
+            inputEvent = new enchant.Event((this.activeInputsNum++) ? 'inputchange' : 'inputstart');
+            inputEvent.source = this.source;
+            this.broadcastEvent(inputEvent);
+        }
+        var downEvent = new enchant.Event(name + this.activeEventNameSuffix);
+        downEvent.source = this.source;
+        this.broadcastEvent(downEvent);
+    },
+    _up: function(name) {
+        var inputEvent;
+        if (this.valueStore[name]) {
+            this.valueStore[name] = false;
+            inputEvent = new enchant.Event((--this.activeInputsNum) ? 'inputchange' : 'inputend');
+            inputEvent.source = this.source;
+            this.broadcastEvent(inputEvent);
+        }
+        var upEvent = new enchant.Event(name + this.inactiveEventNameSuffix);
+        upEvent.source = this.source;
+        this.broadcastEvent(upEvent);
+    }
+});
+
+/**
+ * @scope enchant.BinaryInputSource.prototype
+ */
+enchant.BinaryInputSource = enchant.Class.create(enchant.InputSource, {
+    /**
+     * @name enchant.BinaryInputSource
+     * @class
+     * 任意の2値入力をラップするクラス.
+     * @param {String} identifier 入力のid.
+     * @constructs
+     * @extends enchant.InputSource
+     */
+    initialize: function(identifier) {
+        enchant.InputSource.call(this, identifier);
+    }
+});
+
+/**
+ * @scope enchant.KeyboardInputManager.prototype
+ */
+enchant.KeyboardInputManager = enchant.Class.create(enchant.BinaryInputManager, {
+    /**
+     * @name enchant.KeyboardInputManager
+     * @class
+     * キーボード入力を管理するためのクラス.
+     * @param {HTMLElement} dom element that will be watched.
+     * @param {*} flagStore object that store input flag.
+     * @constructs
+     * @extends enchant.BinaryInputManager
+     */
+    initialize: function(domElement, flagStore) {
+        enchant.BinaryInputManager.call(this, flagStore, 'buttondown', 'buttonup');
+        this._attachDOMEvent(domElement, 'keydown', true);
+        this._attachDOMEvent(domElement, 'keyup', false);
+    },
+    /**
+     * キーコードに対応したBinaryInputSourceを使って{@link enchant.BinaryInputManager#bind} を呼び出す.
+     * @param {Number} keyCode キーコード.
+     * @param {String} name 入力の名前.
+     */
+    keybind: function(keyCode, name) {
+        this.bind(enchant.KeyboardInputSource.getByKeyCode('' + keyCode), name);
+    },
+    /**
+     * キーコードに対応したBinaryInputSourceを使って{@link enchant.BinaryInputManager#unbind} を呼び出す.
+     * @param {Number} keyCode キーコード.
+     */
+    keyunbind: function(keyCode) {
+        this.unbind(enchant.KeyboardInputSource.getByKeyCode('' + keyCode));
+    },
+    _attachDOMEvent: function(domElement, eventType, state) {
+        domElement.addEventListener(eventType,  function(e) {
+            var core = enchant.Core.instance;
+            if (!core || !core.running) {
+                return;
+            }
+            var code = e.keyCode;
+            var source = enchant.KeyboardInputSource._instances[code];
+            if (source) {
+                source.notifyStateChange(state);
+            }
+        }, true);
+    }
+});
+
+/**
+ * @scope enchant.KeyboardInputSource.prototype
+ */
+enchant.KeyboardInputSource = enchant.Class.create(enchant.BinaryInputSource, {
+    /**
+     * @name enchant.KeyboardInputSource
+     * @class
+     * キーボード入力をラップするBinaryInputSource.
+     * キーコードをidとして持つ.
+     * @param {String} keyCode キーコード.
+     * @constructs
+     * @extends enchant.BinaryInputSource
+     */
+    initialize: function(keyCode) {
+        enchant.BinaryInputSource.call(this, keyCode);
+    }
+});
+/**
+ * @private
+ */
+enchant.KeyboardInputSource._instances = {};
+/**
+ * @static
+ * キーコードに対応したインスタンスを取得する.
+ * @param {Number} keyCode キーコード.
+ * @return {enchant.KeyboardInputSource} instance.
+ */
+enchant.KeyboardInputSource.getByKeyCode = function(keyCode) {
+    if (!this._instances[keyCode]) {
+        this._instances[keyCode] = new enchant.KeyboardInputSource(keyCode);
+    }
+    return this._instances[keyCode];
+};
+
+/**
  * @scope enchant.Node.prototype
  */
 enchant.Node = enchant.Class.create(enchant.EventTarget, {
     /**
      * @name enchant.Node
      * @class
-     [lang:ja]
      * Sceneをルートとした表示オブジェクトツリーに属するオブジェクトの基底クラス.
      * 直接使用することはない.
-     [/lang]
-     [lang:en]
-     * Base class for objects in the display tree which is rooted at a Scene.
-     * Not to be used directly.
-     [/lang]
-     [lang:de]
-     * Basisklasse für Objekte die im Darstellungsbaum, 
-     * dessen Wurzel eine Szene ist, enthalten sind.
-     * Sollte nicht direkt verwendet werden.
-     [/lang]
      * @constructs
      * @extends enchant.EventTarget
      */
@@ -2673,44 +2032,20 @@ enchant.Node = enchant.Class.create(enchant.EventTarget, {
         this._offsetY = 0;
 
         /**
-         * [lang:ja]
          * Node が画面に表示されてから経過したフレーム数。
          * {@link enchant.Event.ENTER_FRAME} イベントを受け取る前にインクリメントされる。
          * (ENTER_FRAME イベントのリスナが初めて実行される時に 1 となる。)
-         * [/lang]
-         * [lang:en]
-         * The age (frames) of this node which will be increased before this node receives {@link enchant.Event.ENTER_FRAME} event.
-         * [/lang]
-         * [lang:de]
-         * Das Alter (Frames) dieses Nodes welches vor dem {@link enchant.Event.ENTER_FRAME} Ereignis erhöht wird.
-         * [/lang]
          * @type {Number}
          */
         this.age = 0;
 
         /**
-         [lang:ja]
          * Nodeの親Node.
-         [/lang]
-         [lang:en]
-         * Parent Node of this Node.
-         [/lang]
-         [lang:de]
-         * Der Eltern-Node dieses Node.
-         [/lang]
          * @type {enchant.Group}
          */
         this.parentNode = null;
         /**
-         [lang:ja]
          * Nodeが属しているScene.
-         [/lang]
-         [lang:en]
-         * Scene to which Node belongs.
-         [/lang]
-         [lang:de]
-         * Die Szene, zu welcher dieser Node gehört.
-         [/lang]
          * @type {enchant.Scene}
          */
         this.scene = null;
@@ -2732,30 +2067,16 @@ enchant.Node = enchant.Class.create(enchant.EventTarget, {
         });
 
         /**
-         * [lang:ja]
          * Node が生成される際に、tl プロパティに Timeline オブジェクトを追加している
-         * [/lang]
          */
         if(enchant.ENV.USE_ANIMATION){
             var tl = this.tl = new enchant.Timeline(this);
         }
     },
     /**
-     [lang:ja]
      * Nodeを移動する.
      * @param {Number} x 移動先のx座標.
      * @param {Number} y 移動先のy座標.
-     [/lang]
-     [lang:en]
-     * Move the Node to the given target location.
-     * @param {Number} x Target x coordinates.
-     * @param {Number} y Target y coordinates.
-     [/lang]
-     [lang:de]
-     * Bewegt diesen Node zu den gegebenen Ziel Koordinaten.
-     * @param {Number} x Ziel x Koordinaten.
-     * @param {Number} y Ziel y Koordinaten.
-     [/lang]
      */
     moveTo: function(x, y) {
         this._x = x;
@@ -2763,21 +2084,9 @@ enchant.Node = enchant.Class.create(enchant.EventTarget, {
         this._dirty = true;
     },
     /**
-     [lang:ja]
      * Nodeを移動する.
      * @param {Number} x 移動するx軸方向の距離.
      * @param {Number} y 移動するy軸方向の距離.
-     [/lang]
-     [lang:en]
-     * Move the Node relative to its current position.
-     * @param {Number} x x axis movement distance.
-     * @param {Number} y y axis movement distance.
-     [/lang]
-     [lang:de]
-     * Bewegt diesen Node relativ zur aktuellen Position.
-     * @param {Number} x Distanz auf der x Achse.
-     * @param {Number} y Distanz auf der y Achse.
-     [/lang]
      */
     moveBy: function(x, y) {
         this._x += x;
@@ -2785,15 +2094,7 @@ enchant.Node = enchant.Class.create(enchant.EventTarget, {
         this._dirty = true;
     },
     /**
-     [lang:ja]
      * Nodeのx座標.
-     [/lang]
-     [lang:en]
-     * x coordinates of the Node.
-     [/lang]
-     [lang:de]
-     * Die x Koordinaten des Nodes.
-     [/lang]
      * @type {Number}
      */
     x: {
@@ -2806,15 +2107,7 @@ enchant.Node = enchant.Class.create(enchant.EventTarget, {
         }
     },
     /**
-     [lang:ja]
      * Nodeのy座標.
-     [/lang]
-     [lang:en]
-     * y coordinates of the Node.
-     [/lang]
-     [lang:de]
-     * Die y Koordinaten des Nodes.
-     [/lang]
      * @type {Number}
      */
     y: {
@@ -2869,16 +2162,11 @@ enchant.Node = enchant.Class.create(enchant.EventTarget, {
 });
 
 var _intersectBetweenClassAndInstance = function(Class, instance) {
-    /*
-    return Class.collection.filter(function(classInstance) {
-        return enchant.Entity.prototype._intersectone.call(instance, classInstance);
-    });
-    */
     var ret = [];
     var c;
     for (var i = 0, l = Class.collection.length; i < l; i++) {
         c = Class.collection[i];
-        if (instance._intersectone(c)) {
+        if (instance._intersectOne(c)) {
             ret.push(c);
         }
     }
@@ -2887,21 +2175,12 @@ var _intersectBetweenClassAndInstance = function(Class, instance) {
 
 var _intersectBetweenClassAndClass = function(Class1, Class2) {
     var ret = [];
-    /*
-    Class1.collection.forEach(function(instance1) {
-        Class2.collection.forEach(function(instance2) {
-            if (enchant.Entity.prototype._intersectone.call(instance1, instance2)) {
-                 ret.push([ instance1, instance2 ]);
-            }
-        });
-    });
-    */
     var c1, c2;
     for (var i = 0, l = Class1.collection.length; i < l; i++) {
         c1 = Class1.collection[i];
         for (var j = 0, ll = Class2.collection.length; j < ll; j++) {
             c2 = Class2.collection[j];
-            if (c1._intersectone(c2)) {
+            if (c1._intersectOne(c2)) {
                 ret.push([ c1, c2 ]);
             }
         }
@@ -2909,11 +2188,47 @@ var _intersectBetweenClassAndClass = function(Class1, Class2) {
     return ret;
 };
 
-var _staticintersect = function(other) {
+var _intersectStrictBetweenClassAndInstance = function(Class, instance) {
+    var ret = [];
+    var c;
+    for (var i = 0, l = Class.collection.length; i < l; i++) {
+        c = Class.collection[i];
+        if (instance._intersectStrictOne(c)) {
+            ret.push(c);
+        }
+    }
+    return ret;
+};
+
+var _intersectStrictBetweenClassAndClass = function(Class1, Class2) {
+    var ret = [];
+    var c1, c2;
+    for (var i = 0, l = Class1.collection.length; i < l; i++) {
+        c1 = Class1.collection[i];
+        for (var j = 0, ll = Class2.collection.length; j < ll; j++) {
+            c2 = Class2.collection[j];
+            if (c1._intersectStrictOne(c2)) {
+                ret.push([ c1, c2 ]);
+            }
+        }
+    }
+    return ret;
+};
+
+var _staticIntersect = function(other) {
     if (other instanceof enchant.Entity) {
         return _intersectBetweenClassAndInstance(this, other);
     } else if (typeof other === 'function' && other.collection) {
         return _intersectBetweenClassAndClass(this, other);
+    }
+    return false;
+};
+
+var _staticIntersectStrict = function(other) {
+    if (other instanceof enchant.Entity) {
+        return _intersectStrictBetweenClassAndInstance(this, other);
+    } else if (typeof other === 'function' && other.collection) {
+        return _intersectStrictBetweenClassAndClass(this, other);
     }
     return false;
 };
@@ -2925,16 +2240,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
     /**
      * @name enchant.Entity
      * @class
-     [lang:ja]
      * DOM上で表示する実体を持ったクラス. 直接使用することはない.
-     [/lang]
-     [lang:en]
-     * A class with objects displayed as DOM elements. Not to be used directly.
-     [/lang]
-     [lang:de]
-     * Eine Klasse die Objekte mit Hilfe von DOM Elementen darstellt.
-     * Sollte nicht direkt verwendet werden.
-     [/lang]
      * @constructs
      * @extends enchant.Node
      */
@@ -2955,6 +2261,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         this._width = 0;
         this._height = 0;
         this._backgroundColor = null;
+        this._debugColor = '#0000ff';
         this._opacity = 1;
         this._visible = true;
         this._buttonMode = null;
@@ -2963,47 +2270,22 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         this.__styleStatus = {};
 
         /**
-         [lang:ja]
          * Entityを描画する際の合成処理を設定する.
          * Canvas上に描画する際のみ有効.
          * CanvasのコンテキストのglobalCompositeOperationにセットされる.
-         [/lang]
          */
         this.compositeOperation = null;
 
         /**
-         [lang:ja]
          * Entityにボタンの機能を設定する.
          * Entityに対するタッチ, クリックをleft, right, up, down, a, bいずれかの
          * ボタン入力として割り当てる.
-         [/lang]
-         [lang:en]
-         * Defines this Entity as a button.
-         * When touched or clicked the corresponding button event is dispatched.
-         * Valid buttonModes are: left, right, up, down, a, b. 
-         [/lang]
-         [lang:de]
-         * Definiert diese Entity als Schaltfläche (Button).
-         * Bei einem Klick oder Touch wird das entsprechende
-         * Button Ereignis (Event) ausgelöst.
-         * Mögliche buttonModes sind: left, right, up, down, a, b. 
-         [/lang]
          * @type {String}
          */
         this.buttonMode = null;
         /**
-         [lang:ja]
          * Entityが押されているかどうか.
          * {@link enchant.Entity.buttonMode}が設定されているときだけ機能する.
-         [/lang]
-         [lang:en]
-         * Indicates if this Entity is being clicked.
-         * Only works when {@link enchant.Entity.buttonMode} is set.
-         [/lang]
-         [lang:de]
-         * Zeigt an, ob auf die Entity geklickt wurde.
-         * Funktioniert nur wenn {@link enchant.Entity.buttonMode} gesetzt ist.
-         [/lang]
          * @type {Boolean}
          */
         this.buttonPressed = false;
@@ -3012,32 +2294,22 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
                 return;
             }
             this.buttonPressed = true;
-            var e = new enchant.Event(this.buttonMode + 'buttondown');
-            this.dispatchEvent(e);
-            core.dispatchEvent(e);
+            this.dispatchEvent(new enchant.Event(this.buttonMode + 'buttondown'));
+            core.changeButtonState(this.buttonMode, true);
         });
         this.addEventListener('touchend', function() {
             if (!this.buttonMode) {
                 return;
             }
             this.buttonPressed = false;
-            var e = new enchant.Event(this.buttonMode + 'buttonup');
-            this.dispatchEvent(e);
-            core.dispatchEvent(e);
+            this.dispatchEvent(new enchant.Event(this.buttonMode + 'buttonup'));
+            core.changeButtonState(this.buttonMode, false);
         });
 
         this.enableCollection();
     },
     /**
-     [lang:ja]
      * Entityの横幅.
-     [/lang]
-     [lang:en]
-     * The width of the Entity.
-     [/lang]
-     [lang:de]
-     * Die Breite der Entity.
-     [/lang]
      * @type {Number}
      */
     width: {
@@ -3050,15 +2322,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * Entityの高さ.
-     [/lang]
-     [lang:en]
-     * The height of the Entity.
-     [/lang]
-     [lang:de]
-     * Die Höhe der Entity.
-     [/lang]
      * @type {Number}
      */
     height: {
@@ -3071,18 +2335,8 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * Entityの背景色.
      * CSSの'color'プロパティと同様の形式で指定できる.
-     [/lang]
-     [lang:en]
-     * The Entity background color.
-     * Must be provided in the same format as the CSS 'color' property.
-     [/lang]
-     [lang:de]
-     * Die Hintergrundfarbe der Entity.
-     * Muss im gleichen Format definiert werden wie das CSS 'color' Attribut.
-     [/lang]
      * @type {String}
      */
     backgroundColor: {
@@ -3094,20 +2348,21 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
+     * Entityのデバッグの枠色.
+     * CSSの'color'プロパティと同様の形式で指定できる.
+     * @type {String}
+     */
+    debugColor: {
+        get: function() {
+            return this._debugColor;
+        },
+        set: function(color) {
+            this._debugColor = color;
+        }
+    },
+    /**
      * Entityの透明度.
      * 0から1までの値を設定する(0が完全な透明, 1が完全な不透明).
-     [/lang]
-     [lang:en]
-     * The transparency of this entity.
-     * Defines the transparency level from 0 to 1
-     * (0 is completely transparent, 1 is completely opaque).
-     [/lang]
-     [lang:de]
-     * Transparenz der Entity.
-     * Definiert den Level der Transparenz von 0 bis 1
-     * (0 ist komplett transparent, 1 ist vollständig deckend).
-     [/lang]
      * @type {Number}
      */
     opacity: {
@@ -3119,15 +2374,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * Entityを表示するかどうかを指定する.
-     [/lang]
-     [lang:en]
-     * Indicates whether or not to display this Entity.
-     [/lang]
-     [lang:de]
-     * Zeigt an, ob die Entity dargestellt werden soll oder nicht.
-     [/lang]
      * @type {Boolean}
      */
     visible: {
@@ -3139,15 +2386,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * Entityのタッチを有効にするかどうかを指定する.
-     [/lang]
-     [lang:en]
-     * Indicates whether or not this Entity can be touched.
-     [/lang]
-     [lang:de]
-     * Definiert ob auf die Entity geklickt werden kann. 
-     [/lang]
      * @type {Boolean}
      */
     touchEnabled: {
@@ -3164,34 +2403,19 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * Entityの矩形が交差しているかどうかにより衝突判定を行う.
      * @param {*} other 衝突判定を行うEntityなどx, y, width, heightプロパティを持ったObject.
      * @return {Boolean} 衝突判定の結果.
-     [/lang]
-     [lang:en]
-     * Performs a collision detection based on whether or not the bounding rectangles are intersecting.
-     * @param {*} other An object like Entity, with the properties x, y, width, height, which are used for the 
-     * collision detection.
-     * @return {Boolean} True, if a collision was detected.
-     [/lang]
-     [lang:de]
-     * Führt eine Kollisionsdetektion durch, die überprüft ob eine Überschneidung zwischen den
-     * begrenzenden Rechtecken existiert. 
-     * @param {*} other Ein Objekt wie Entity, welches x, y, width und height Variablen besitzt,
-     * mit dem die Kollisionsdetektion durchgeführt wird.
-     * @return {Boolean} True, falls eine Kollision festgestellt wurde.
-     [/lang]
      */
     intersect: function(other) {
         if (other instanceof enchant.Entity) {
-            return this._intersectone(other);
+            return this._intersectOne(other);
         } else if (typeof other === 'function' && other.collection) {
             return _intersectBetweenClassAndInstance(other, this);
         }
         return false;
     },
-    _intersectone: function(other) {
+    _intersectOne: function(other) {
         if (this._dirty) {
             this._updateCoordinate();
         } if (other._dirty) {
@@ -3200,30 +2424,89 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         return this._offsetX < other._offsetX + other.width && other._offsetX < this._offsetX + this.width &&
             this._offsetY < other._offsetY + other.height && other._offsetY < this._offsetY + this.height;
     },
+    intersectStrict: function(other) {
+        if (other instanceof enchant.Entity) {
+            return this._intersectStrictOne(other);
+        } else if (typeof other === 'function' && other.collection) {
+            return _intersectStrictBetweenClassAndInstance(other, this);
+        }
+        return false;
+    },
+    _intersectStrictOne: function(other) {
+        if (this._dirty) {
+            this._updateCoordinate();
+        } if (other._dirty) {
+            other._updateCoordinate();
+        }
+        var rect1 = this.getOrientedBoundingRect(),
+            rect2 = other.getOrientedBoundingRect(),
+            lt1 = rect1.leftTop, rt1 = rect1.rightTop,
+            lb1 = rect1.leftBottom, rb1 = rect1.rightBottom,
+            lt2 = rect2.leftTop, rt2 = rect2.rightTop,
+            lb2 = rect2.leftBottom, rb2 = rect2.rightBottom,
+            ltx1 = lt1[0], lty1 = lt1[1], rtx1 = rt1[0], rty1 = rt1[1],
+            lbx1 = lb1[0], lby1 = lb1[1], rbx1 = rb1[0], rby1 = rb1[1],
+            ltx2 = lt2[0], lty2 = lt2[1], rtx2 = rt2[0], rty2 = rt2[1],
+            lbx2 = lb2[0], lby2 = lb2[1], rbx2 = rb2[0], rby2 = rb2[1],
+            t1 = [ rtx1 - ltx1, rty1 - lty1 ],
+            r1 = [ rbx1 - rtx1, rby1 - rty1 ],
+            b1 = [ lbx1 - rbx1, lby1 - rby1 ],
+            l1 = [ ltx1 - lbx1, lty1 - lby1 ],
+            t2 = [ rtx2 - ltx2, rty2 - lty2 ],
+            r2 = [ rbx2 - rtx2, rby2 - rty2 ],
+            b2 = [ lbx2 - rbx2, lby2 - rby2 ],
+            l2 = [ ltx2 - lbx2, lty2 - lby2 ],
+            cx1 = (ltx1 + rtx1 + lbx1 + rbx1) >> 2,
+            cy1 = (lty1 + rty1 + lby1 + rby1) >> 2,
+            cx2 = (ltx2 + rtx2 + lbx2 + rbx2) >> 2,
+            cy2 = (lty2 + rty2 + lby2 + rby2) >> 2,
+            i, j, poss1, poss2, dirs1, dirs2, pos1, pos2, dir1, dir2,
+            px1, py1, px2, py2, dx1, dy1, dx2, dy2, vx, vy, c, c1, c2;
+        if (t1[0] * (cy2 - lty1) - t1[1] * (cx2 - ltx1) > 0 &&
+            r1[0] * (cy2 - rty1) - r1[1] * (cx2 - rtx1) > 0 &&
+            b1[0] * (cy2 - rby1) - b1[1] * (cx2 - rbx1) > 0 &&
+            l1[0] * (cy2 - lby1) - l1[1] * (cx2 - lbx1) > 0) {
+            return true;
+        } else if (t2[0] * (cy1 - lty2) - t2[1] * (cx1 - ltx2) > 0 &&
+            r2[0] * (cy1 - rty2) - r2[1] * (cx1 - rtx2) > 0 &&
+            b2[0] * (cy1 - rby2) - b2[1] * (cx1 - rbx2) > 0 &&
+            l2[0] * (cy1 - lby2) - l2[1] * (cx1 - lbx2) > 0) {
+            return true;
+        } else {
+            poss1 = [ lt1, rt1, rb1, lb1 ];
+            poss2 = [ lt2, rt2, rb2, lb2 ];
+            dirs1 = [ t1, r1, b1, l1 ];
+            dirs2 = [ t2, r2, b2, l2 ];
+            for (i = 0; i < 4; i++) {
+                pos1 = poss1[i];
+                px1 = pos1[0]; py1 = pos1[1];
+                dir1 = dirs1[i];
+                dx1 = dir1[0]; dy1 = dir1[1];
+                for (j = 0; j < 4; j++) {
+                    pos2 = poss2[j];
+                    px2 = pos2[0]; py2 = pos2[1];
+                    dir2 = dirs2[j];
+                    dx2 = dir2[0]; dy2 = dir2[1];
+                    c = dx1 * dy2 - dy1 * dx2;
+                    if (c !== 0) {
+                        vx = px2 - px1;
+                        vy = py2 - py1;
+                        c1 = (vx * dy1 - vy * dx1) / c;
+                        c2 = (vx * dy2 - vy * dx2) / c;
+                        if (0 < c1 && c1 < 1 && 0 < c2 && c2 < 1) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+    },
     /**
-     [lang:ja]
      * Entityの中心点どうしの距離により衝突判定を行う.
      * @param {*} other 衝突判定を行うEntityなどx, y, width, heightプロパティを持ったObject.
      * @param {Number} [distance] 衝突したと見なす最大の距離. デフォルト値は二つのEntityの横幅と高さの平均.
      * @return {Boolean} 衝突判定の結果.
-     [/lang]
-     [lang:en]
-     * Performs a collision detection based on distance from the Entity's central point.
-     * @param {*} other An object like Entity, with properties x, y, width, height, which are used for the 
-     * collision detection.
-     * @param {Number} [distance] The greatest distance to be considered for a collision.
-     * The default distance is the average of both objects width and height.
-     * @return {Boolean} True, if a collision was detected.
-     [/lang]
-     [lang:de]
-     * Führt eine Kollisionsdetektion durch, die anhand der Distanz zwischen den Objekten feststellt,
-     * ob eine Kollision aufgetreten ist.
-     * @param {*} other Ein Objekt wie Entity, welches x, y, width und height Variablen besitzt,
-     * mit dem die Kollisionsdetektion durchgeführt wird.
-     * @param {Number} [distance] Die größte Distanz die für die Kollision in betracht gezogen wird.
-     * Der Standardwert ist der Durchschnitt der Breite und Höhe beider Objekte.
-     * @return {Boolean} True, falls eine Kollision festgestellt wurde.
-     [/lang]
      */
     within: function(other, distance) {
         if (this._dirty) {
@@ -3238,21 +2521,9 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         return (_ = this._offsetX - other._offsetX + (this.width - other.width) / 2) * _ +
             (_ = this._offsetY - other._offsetY + (this.height - other.height) / 2) * _ < distance * distance;
     }, /**
-     [lang:ja]
      * Spriteを拡大縮小する.
      * @param {Number} x 拡大するx軸方向の倍率.
      * @param {Number} [y] 拡大するy軸方向の倍率.
-     [/lang]
-     [lang:en]
-     * Enlarges or shrinks this Sprite.
-     * @param {Number} x Scaling factor on the x axis.
-     * @param {Number} [y] Scaling factor on the y axis.
-     [/lang]
-     [lang:de]
-     * Vergrößert oder verkleinert dieses Sprite.
-     * @param {Number} x Skalierungsfaktor auf der x-Achse.
-     * @param {Number} [y] Skalierungsfaktor auf der y-Achse.
-     [/lang]
      */
     scale: function(x, y) {
         this._scaleX *= x;
@@ -3260,33 +2531,15 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         this._dirty = true;
     },
     /**
-     [lang:ja]
      * Spriteを回転する.
      * @param {Number} deg 回転する角度 (度数法).
-     [/lang]
-     [lang:en]
-     * Rotate this Sprite.
-     * @param {Number} deg Rotation angle (degree).
-     [/lang]
-     [lang:de]
-     * Rotiert dieses Sprite.
-     * @param {Number} deg Rotationswinkel (Grad).
-     [/lang]
      */
     rotate: function(deg) {
         this._rotation += deg;
         this._dirty = true;
     },
     /**
-     [lang:ja]
      * Spriteのx軸方向の倍率.
-     [/lang]
-     [lang:en]
-     * Scaling factor on the x axis of this Sprite.
-     [/lang]
-     [lang:de]
-     * Skalierungsfaktor auf der x-Achse dieses Sprites.
-     [/lang]
      * @type {Number}
      */
     scaleX: {
@@ -3299,15 +2552,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * Spriteのy軸方向の倍率.
-     [/lang]
-     [lang:en]
-     * Scaling factor on the y axis of this Sprite.
-     [/lang]
-     [lang:de]
-     * Skalierungsfaktor auf der y-Achse dieses Sprites.
-     [/lang]
      * @type {Number}
      */
     scaleY: {
@@ -3320,15 +2565,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * Spriteの回転角 (度数法).
-     [/lang]
-     [lang:en]
-     * Sprite rotation angle (degree).
-     [/lang]
-     [lang:de]
-     * Rotationswinkel des Sprites (Grad).
-     [/lang]
      * @type {Number}
      */
     rotation: {
@@ -3341,15 +2578,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * 回転・拡大縮小の基準点のX座標
-     [/lang]
-     [lang:en]
-     * The point of origin used for rotation and scaling.
-     [/lang]
-     [lang:de]
-     * Ausgangspunkt für Rotation und Skalierung.
-     [/lang]
      * @type {Number}
      */
     originX: {
@@ -3362,15 +2591,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * 回転・拡大縮小の基準点のY座標
-     [/lang]
-     [lang:en]
-     * The point of origin used for rotation and scaling.
-     [/lang]
-     [lang:de]
-     * Ausgangspunkt für Rotation und Skalierung.
-     [/lang]
      * @type {Number}
      */
     originY: {
@@ -3383,10 +2604,8 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     * [lang:ja]
      * インスタンスをコレクションの対象にする.
      * デフォルトで呼び出される.
-     * [/lang]
      */
     enableCollection: function() {
         this.addEventListener('addedtoscene', this._addSelfToCollection);
@@ -3396,9 +2615,7 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     * [lang:ja]
      * インスタンスをコレクションの対象から除外する.
-     * [/lang]
      */
     disableCollection: function() {
         this.removeEventListener('addedtoscene', this._addSelfToCollection);
@@ -3422,6 +2639,38 @@ enchant.Entity = enchant.Class.create(enchant.Node, {
             }
         }, this);
     },
+    getBoundingRect: function() {
+        var w = this.width || 0;
+        var h = this.height || 0;
+        var mat = this._matrix;
+        var m11w = mat[0] * w, m12w = mat[1] * w,
+            m21h = mat[2] * h, m22h = mat[3] * h,
+            mdx = mat[4], mdy = mat[5];
+        var xw = [ mdx, m11w + mdx, m21h + mdx, m11w + m21h + mdx ].sort(function(a, b) { return a - b; });
+        var yh = [ mdy, m12w + mdy, m22h + mdy, m12w + m22h + mdy ].sort(function(a, b) { return a - b; });
+
+        return {
+            left: xw[0],
+            top: yh[0],
+            width: xw[3] - xw[0],
+            height: yh[3] - yh[0]
+        };
+    },
+    getOrientedBoundingRect: function() {
+        var w = this.width || 0;
+        var h = this.height || 0;
+        var mat = this._matrix;
+        var m11w = mat[0] * w, m12w = mat[1] * w,
+            m21h = mat[2] * h, m22h = mat[3] * h,
+            mdx = mat[4], mdy = mat[5];
+
+        return {
+            leftTop: [ mdx, mdy ],
+            rightTop: [ m11w + mdx, m12w + mdy ],
+            leftBottom: [ m21h + mdx, m22h + mdy ],
+            rightBottom: [ m11w + m21h + mdx, m12w + m22h + mdy ]
+        };
+    },
     getConstructor: function() {
         return Object.getPrototypeOf(this).constructor;
     }
@@ -3438,7 +2687,8 @@ var _collectizeConstructor = function(Constructor) {
     } else {
         Constructor._collectionTarget = [];
     }
-    Constructor.intersect = _staticintersect;
+    Constructor.intersect = _staticIntersect;
+    Constructor.intersectStrict = _staticIntersectStrict;
     Constructor.collection = [];
     Constructor._collective = true;
 };
@@ -3456,24 +2706,10 @@ enchant.Sprite = enchant.Class.create(enchant.Entity, {
     /**
      * @name enchant.Sprite
      * @class
-     [lang:ja]
      * 画像表示機能を持ったクラス. Entity を継承している.
      *
      * @param {Number} [width] Spriteの横幅.
      * @param {Number} [height] Spriteの高さ.
-     [/lang]
-     [lang:en]
-     * Class which can display images.
-     * 
-     * @param {Number} [width] Sprite width.
-     * @param {Number} [height] Sprite height.
-     [/lang]
-     [lang:de]
-     * Eine Klasse die Grafiken darstellen kann.
-     * 
-     * @param {Number} [width] Die Breite des Sprites.
-     * @param {Number} [height] Die Höhe des Sprites.
-     [/lang]
      * @example
      *   var bear = new Sprite(32, 32);
      *   bear.image = core.assets['chara1.gif'];
@@ -3487,14 +2723,13 @@ enchant.Sprite = enchant.Class.create(enchant.Entity, {
         this.width = width;
         this.height = height;
         this._image = null;
+        this._debugColor = '#ff0000';
         this._frameLeft = 0;
         this._frameTop = 0;
         this._frame = 0;
         this._frameSequence = [];
         /**
-         * [lang:ja]
          * frame に配列が指定されたときの処理。
-         * [/lang]
          */
         this.addEventListener('enterframe', function() {
             if (this._frameSequence.length !== 0) {
@@ -3509,15 +2744,7 @@ enchant.Sprite = enchant.Class.create(enchant.Entity, {
         });
     },
     /**
-     [lang:ja]
      * Spriteで表示する画像.
-     [/lang]
-     [lang:en]
-     * Image displayed in the Sprite.
-     [/lang]
-     [lang:de]
-     * Die Grafik die im Sprite dargestellt wird.
-     [/lang]
      * @type {enchant.Surface}
      */
     image: {
@@ -3525,6 +2752,9 @@ enchant.Sprite = enchant.Class.create(enchant.Entity, {
             return this._image;
         },
         set: function(image) {
+            if (image === undefined) {
+                throw new Error('Assigned value on Sprite.image is undefined. Please double-check image path, and check if the image you want to use is preload before use.');
+            }
             if (image === this._image) {
                 return;
             }
@@ -3533,28 +2763,12 @@ enchant.Sprite = enchant.Class.create(enchant.Entity, {
         }
     },
     /**
-     [lang:ja]
      * 表示するフレームのインデックス.
      * Spriteと同じ横幅と高さを持ったフレームが{@link enchant.Sprite#image}プロパティの画像に左上から順に
      * 配列されていると見て, 0から始まるインデックスを指定することでフレームを切り替える.
      *
      * 数値の配列が指定された場合、それらを毎フレーム順に切り替える。
      * ループするが、null値が含まれているとそこでループをストップする。
-     [/lang]
-     [lang:en]
-     * Indizes of the frames to be displayed.
-     * Frames with same width and height as Sprite will be arrayed from upper left corner of the 
-     * {@link enchant.Sprite#image} image. When a sequence of numbers is provided, the displayed frame 
-     * will switch automatically. At the end of the array the sequence will restart. By setting 
-     * a value within the sequence to null, the frame switching is stopped.
-     [/lang]
-     [lang:de]
-     * Die Indizes der darzustellenden Frames.
-     * Die Frames mit der selben Größe wie das Sprite werden aus der {@link enchant.Sprite#image} image Variable,
-     * beginnend an der oberen linken Ecke, angeordnet. Wenn eine Nummbersequenz übergeben wird, wird
-     * der dargestellte Frame automatisch gewechselt. Am ende des Arrays der Sequenz wird diese neugestartet.
-     * Wenn ein Wert in der Sequenz auf null gesetzt wird, wird das automatische Framewechseln gestoppt.
-     [/lang]
      * @example
      * var sprite = new Sprite(32, 32);
      * sprite.frame = [0, 1, 0, 2]
@@ -3587,9 +2801,7 @@ enchant.Sprite = enchant.Class.create(enchant.Entity, {
     },
     /**
      * 0 <= frame
-     * [lang:ja]
      * 0以下の動作は未定義.
-     * [/lang]
      * @param frame
      * @private
      */
@@ -3613,7 +2825,7 @@ enchant.Sprite = enchant.Class.create(enchant.Entity, {
         },
         set: function(width) {
             this._width = width;
-            this._setFrame();
+            this._setFrame(this._frame);
             this._dirty = true;
         }
     },
@@ -3627,43 +2839,57 @@ enchant.Sprite = enchant.Class.create(enchant.Entity, {
         },
         set: function(height) {
             this._height = height;
-            this._setFrame();
+            this._setFrame(this._frame);
             this._dirty = true;
         }
     },
     cvsRender: function(ctx) {
-        if (this._image == null || this._width === 0 || this._height === 0) {
-            return;
-        }
-        var image = this._image;
-        var element = image._element;
-        var sx = this._frameLeft;
-        var sy = this._frameTop;
-        var sw = Math.min(this.width, image.width - sx);
-        var sh = Math.min(this.height, image.height - sy);
-        var dw = Math.min(image.width, this.width);
-        var dh = Math.min(image.height, this.height);
-        var x, y, w, h;
-        for (y = 0; y < this.height; y += dh) {
-            h = (this.height < y + dh) ? this.height - y : dh;
-            for (x = 0; x < this.width; x += dw) {
-                w = (this.width < x + dw) ? this.width - x : dw;
-                ctx.drawImage(element, sx, sy,
-                    sw * w / dw, sh * h / dh, x, y, w, h);
+        var image = this._image,
+            w = this._width, h = this._height,
+            iw, ih, elem, sx, sy, sw, sh;
+        if (image && w !== 0 && h !== 0) {
+            iw = image.width, ih = image.height;
+            if (iw < w || ih < h) {
+                ctx.fillStyle = enchant.Surface._getPattern(image);
+                ctx.fillRect(0, 0, w, h);
+            } else {
+                elem = image._element;
+                sx = this._frameLeft;
+                sy = Math.min(this._frameTop, ih - h);
+                // IE9 doesn't allow for negative or 0 widths/heights when drawing on the CANVAS element
+                sw = Math.max(0.01, Math.min(iw - sx, w));
+                sh = Math.max(0.01, Math.min(ih - sy, h));
+                ctx.drawImage(elem, sx, sy, sw, sh, 0, 0, w, h);
             }
         }
     },
-    domRender: function(element) {
-        if (this._image) {
-            if (this._image._css) {
-                this._style['background-image'] = this._image._css;
-                this._style['background-position'] =
-                    -this._frameLeft + 'px ' +
-                    -this._frameTop + 'px';
-            } else if (this._image._element) {
-            }
+    domRender: (function() {
+        if (enchant.ENV.VENDOR_PREFIX === 'ms') {
+            return function(element) {
+                if (this._image) {
+                    if (this._image._css) {
+                        this._style['background-image'] = this._image._css;
+                        this._style['background-position'] =
+                            -this._frameLeft + 'px ' +
+                            -this._frameTop + 'px';
+                    } else if (this._image._element) {
+                    }
+                }
+            };
+        } else {
+            return function(element) {
+                if (this._image) {
+                    if (this._image._css) {
+                        this._style['background-image'] = this._image._css;
+                        this._style['background-position'] =
+                            -this._frameLeft + 'px ' +
+                            -this._frameTop + 'px';
+                    } else if (this._image._element) {
+                    }
+                }
+            };
         }
-    }
+    }())
 });
 
 /**
@@ -3673,15 +2899,7 @@ enchant.Label = enchant.Class.create(enchant.Entity, {
     /**
      * @name enchant.Label
      * @class
-     [lang:ja]
      * Label クラス。
-     [/lang]
-     [lang:en]
-     * A class for Label object.
-     [/lang]
-     [lang:de]
-     * Erstellt ein Label Objekt.
-     [/lang]
      * @constructs
      * @extends enchant.Entity
      */
@@ -3692,6 +2910,8 @@ enchant.Label = enchant.Class.create(enchant.Entity, {
         this.width = 300;
         this.font = '14px serif';
         this.textAlign = 'left';
+
+        this._debugColor = '#ff0000';
     },
     width: {
         get: function() {
@@ -3705,15 +2925,10 @@ enchant.Label = enchant.Class.create(enchant.Entity, {
         }
     },
     /**
-     [lang:ja]
      * 表示するテキスト.
-     [/lang]
-     [lang:en]
-     * Text to be displayed.
-     [/lang]
-     [lang:de]
-     * Darzustellender Text.
-     [/lang]
+     * DOM レンダラを利用している場合 (DOMScene 以下にある場合) 改行タグ (br) も利用できるが、
+     * ユーザから入力したり、サーバから取得した文字列を表示する場合, XSS 脆弱性などに注意してください.
+     * Canvas レンダラを利用できる場合でも、改行タグ (br, BR) は改行に変換されます。
      * @type {String}
      */
     text: {
@@ -3739,18 +2954,8 @@ enchant.Label = enchant.Class.create(enchant.Entity, {
         }
     },
     /**
-     [lang:ja]
      * テキストの水平位置の指定.
      * CSSの'text-align'プロパティと同様の形式で指定できる.
-     [/lang]
-     [lang:en]
-     * Specifies horizontal alignment of text.
-     * Can be set according to the format of the CSS 'text-align' property.
-     [/lang]
-     [lang:de]
-     * Spezifiziert die horizontale Ausrichtung des Textes.
-     * Kann im gleichen Format wie die CSS 'text-align' Eigenschaft angegeben werden.
-     [/lang]
      * @type {String}
      */
     textAlign: {
@@ -3763,18 +2968,8 @@ enchant.Label = enchant.Class.create(enchant.Entity, {
         }
     },
     /**
-     [lang:ja]
      * フォントの指定.
      * CSSの'font'プロパティと同様の形式で指定できる.
-     [/lang]
-     [lang:en]
-     * Font settings.
-     * Can be set according to the format of the CSS 'font' property.
-     [/lang]
-     [lang:de]
-     * Text Eigenschaften.
-     * Kann im gleichen Format wie die CSS 'font' Eigenschaft angegeben werden.
-     [/lang]
      * @type {String}
      */
     font: {
@@ -3787,18 +2982,8 @@ enchant.Label = enchant.Class.create(enchant.Entity, {
         }
     },
     /**
-     [lang:ja]
      * 文字色の指定.
      * CSSの'color'プロパティと同様の形式で指定できる.
-     [/lang]
-     [lang:en]
-     * Text color settings.
-     * Can be set according to the format of the CSS 'color' property.
-     [/lang]
-     [lang:de]
-     * Text Farbe.
-     * Kann im gleichen Format wie die CSS 'color' Eigenschaft angegeben werden.
-     [/lang]
      * @type {String}
      */
     color: {
@@ -3874,33 +3059,33 @@ enchant.Label = enchant.Class.create(enchant.Entity, {
         } else {
             this._boundOffset = 0;
         }
+    },
+    getMetrics: function(text) {
+        var ret = {};
+        var div, width, height;
+        if (document.body) {
+            div = document.createElement('div');
+            for (var prop in this._style) {
+                if(prop !== 'width' && prop !== 'height') {
+                    div.style[prop] = this._style[prop];
+                }
+            }
+            text = text || this._text;
+            div.innerHTML = text.replace(/ /g, '&nbsp;');
+            div.style.whiteSpace = 'noWrap';
+            div.style.lineHeight = 1;
+            document.body.appendChild(div);
+            ret.height = parseInt(getComputedStyle(div).height, 10) + 1;
+            div.style.position = 'absolute';
+            ret.width = parseInt(getComputedStyle(div).width, 10) + 1;
+            document.body.removeChild(div);
+        } else {
+            ret.width = this.width;
+            ret.height = this.height;
+        }
+        return ret;
     }
 });
-
-enchant.Label.prototype.getMetrics = function(text) {
-    var ret = {};
-    var div, width, height;
-    if (document.body) {
-        div = document.createElement('div');
-        for (var prop in this._style) {
-            if(prop !== 'width' && prop !== 'height') {
-                div.style[prop] = this._style[prop];
-            }
-        }
-        text = text || this._text;
-        div.innerHTML = text.replace(/ /g, '&nbsp;');
-        div.style.whiteSpace = 'noWrap';
-        document.body.appendChild(div);
-        ret.height = parseInt(getComputedStyle(div).height, 10) + 1;
-        div.style.position = 'absolute';
-        ret.width = parseInt(getComputedStyle(div).width, 10) + 1;
-        document.body.removeChild(div);
-    } else {
-        ret.width = this.width;
-        ret.height = this.height;
-    }
-    return ret;
-};
 
 /**
  * @scope enchant.Map.prototype
@@ -3909,25 +3094,10 @@ enchant.Map = enchant.Class.create(enchant.Entity, {
     /**
      * @name enchant.Map
      * @class
-     [lang:ja]
      * タイルセットからマップを生成して表示するクラス.
      *
      * @param {Number} tileWidth タイルの横幅.
      * @param {Number} tileHeight タイルの高さ.
-     [/lang]
-     [lang:en]
-     * A class to create and display maps from a tile set.
-     *
-     * @param {Number} tileWidth Tile width.
-     * @param {Number} tileHeight Tile height.
-     [/lang]
-     [lang:de]
-     * Eine Klasse mit der Karten aus Kacheln (Tiles)
-     * erstellt und angezeigt werden können.
-     *
-     * @param {Number} tileWidth Kachelbreite.
-     * @param {Number} tileHeight Kachelhöhe.
-     [/lang]
      * @constructs
      * @extends enchant.Entity
      */
@@ -3965,16 +3135,7 @@ enchant.Map = enchant.Class.create(enchant.Entity, {
         this.touchEnabled = false;
 
         /**
-         [lang:ja]
          * タイルが衝突判定を持つかを表す値の二元配列.
-         [/lang]
-         [lang:en]
-         * Two dimensional array to store if collision detection should be performed for a tile.
-         [/lang]
-         [lang:de]
-         * Ein 2-Dimensionales Array um zu speichern, ob für eine Kachel
-         * Kollesionsdetektion durchgeführt werden soll.
-         [/lang]
          * @type {Array.<Array.<Number>>}
          */
         this.collisionData = null;
@@ -4062,26 +3223,10 @@ enchant.Map = enchant.Class.create(enchant.Entity, {
         });
     },
     /**
-     [lang:ja]
      * データを設定する.
      * タイルががimageプロパティの画像に左上から順に配列されていると見て, 0から始まる
      * インデックスの二元配列を設定する.複数指定された場合は後のものから順に表示される.
      * @param {...Array<Array.<Number>>} data タイルのインデックスの二元配列. 複数指定できる.
-     [/lang]
-     [lang:en]
-     * Set map data.
-     * Sets the tile data, whereas the data (two-dimensional array with indizes starting from 0) 
-     * is mapped on the image starting from the upper left corner.
-     * When more than one map data array is set, they are displayed in reverse order.
-     * @param {...Array<Array.<Number>>} data Two-dimensional array of tile indizes. Multiple designations possible.
-     [/lang]
-     [lang:de]
-     * Setzt die Kartendaten.
-     * Setzt die Kartendaten, wobei die Daten (ein 2-Dimensionales Array bei dem die Indizes bei 0 beginnen) 
-     * auf das Bild, beginned bei der linken oberen Ecke) projeziert werden.
-     * Sollte mehr als ein Array übergeben worden sein, werden die Karten in invertierter Reihenfolge dargestellt. 
-     * @param {...Array<Array.<Number>>} data 2-Dimensionales Array mit Kachel Indizes. Mehrfachangaben möglich.
-     [/lang]
      */
     loadData: function(data) {
         this._data = Array.prototype.slice.apply(arguments);
@@ -4105,24 +3250,10 @@ enchant.Map = enchant.Class.create(enchant.Entity, {
         }
     },
     /**
-     [lang:ja]
      * ある座標のタイルが何か調べる.
      * @param {Number} x マップ上の点のx座標.
      * @param {Number} y マップ上の点のy座標.
      * @return {*} ある座標のタイルのデータ.
-     [/lang]
-     [lang:en]
-     * Checks what tile is present at the given position.
-     * @param {Number} x x coordinates of the point on the map.
-     * @param {Number} y y coordinates of the point on the map.
-     * @return {*} The tile data for the given position.
-     [/lang]
-     [lang:de]
-     * Überprüft welche Kachel an der gegeben Position vorhanden ist.
-     * @param {Number} x Die x Koordinataten des Punktes auf der Karte.
-     * @param {Number} y Die y Koordinataten des Punktes auf der Karte.
-     * @return {*} Die Kachel für die angegebene Position.
-     [/lang]
      */
     checkTile: function(x, y) {
         if (x < 0 || this.width <= x || y < 0 || this.height <= y) {
@@ -4139,24 +3270,10 @@ enchant.Map = enchant.Class.create(enchant.Entity, {
         return data[y][x];
     },
     /**
-     [lang:ja]
      * Map上に障害物があるかどうかを判定する.
      * @param {Number} x 判定を行うマップ上の点のx座標.
      * @param {Number} y 判定を行うマップ上の点のy座標.
      * @return {Boolean} 障害物があるかどうか.
-     [/lang]
-     [lang:en]
-     * Judges whether or not obstacles are on top of Map.
-     * @param {Number} x x coordinates of detection spot on map.
-     * @param {Number} y y coordinates of detection spot on map.
-     * @return {Boolean} True, if there are obstacles.
-     [/lang]
-     [lang:de]
-     * Überprüft ob auf der Karte Hindernisse vorhanden sind.
-     * @param {Number} x Die x Koordinataten des Punktes auf der Karte, der überprüft werden soll.
-     * @param {Number} y Die y Koordinataten des Punktes auf der Karte, der überprüft werden soll.
-     * @return {Boolean} True, falls Hindernisse vorhanden sind.
-     [/lang]
      */
     hitTest: function(x, y) {
         if (x < 0 || this.width <= x || y < 0 || this.height <= y) {
@@ -4183,15 +3300,7 @@ enchant.Map = enchant.Class.create(enchant.Entity, {
         }
     },
     /**
-     [lang:ja]
      * Mapで表示するタイルセット画像.
-     [/lang]
-     [lang:en]
-     * Image with which the tile set is displayed on the map.
-     [/lang]
-     [lang:de]
-     * Das Bild mit dem die Kacheln auf der Karte dargestellt werden.
-     [/lang]
      * @type {enchant.Surface}
      */
     image: {
@@ -4220,15 +3329,7 @@ enchant.Map = enchant.Class.create(enchant.Entity, {
         }
     },
     /**
-     [lang:ja]
      * Mapのタイルの横幅.
-     [/lang]
-     [lang:en]
-     * Map tile width.
-     [/lang]
-     [lang:de]
-     * Kachelbreite
-     [/lang]
      * @type {Number}
      */
     tileWidth: {
@@ -4241,15 +3342,7 @@ enchant.Map = enchant.Class.create(enchant.Entity, {
         }
     },
     /**
-     [lang:ja]
      * Mapのタイルの高さ.
-     [/lang]
-     [lang:en]
-     * Map tile height.
-     [/lang]
-     [lang:de]
-     * Kachelhöhe.
-     [/lang]
      * @type {Number}
      */
     tileHeight: {
@@ -4358,7 +3451,6 @@ enchant.Group = enchant.Class.create(enchant.Node, {
     /**
      * @name enchant.Group
      * @class
-     [lang:ja]
      * 複数の{@link enchant.Node}を子に持つことができるクラス.
      *
      * @example
@@ -4374,53 +3466,12 @@ enchant.Group = enchant.Class.create(enchant.Node, {
      *   });
      *
      * @extends enchant.Node
-     [/lang]
-     [lang:en]
-     * A class that can hold multiple {@link enchant.Node}.
-     *
-     * @example
-     *   var stage = new Group();
-     *   stage.addChild(player);
-     *   stage.addChild(enemy);
-     *   stage.addChild(map);
-     *   stage.addEventListener('enterframe', function() {
-     *      // Moves the entire frame in according to the player's coordinates.
-     *      if (this.x > 64 - player.x) {
-     *          this.x = 64 - player.x;
-     *      }
-     *   });
-     *
-     [/lang]
-     [lang:de]
-     * Eine Klasse die mehrere {@link enchant.Node} beinhalten kann.
-     *
-     * @example
-     *   var stage = new Group();
-     *   stage.addChild(player);
-     *   stage.addChild(enemy);
-     *   stage.addChild(map);
-     *   stage.addEventListener('enterframe', function() {
-     *      // Bewegt den gesamten Frame je nach der aktuelle Spielerposition.
-     *      if (this.x > 64 - player.x) {
-     *          this.x = 64 - player.x;
-     *      }
-     *   });
-     *
-     [/lang]
      * @constructs
      * @extends enchant.Node
      */
     initialize: function() {
         /**
-         [lang:ja]
          * 子のNode.
-         [/lang]
-         [lang:en]
-         * Child Nodes.
-         [/lang]
-         [lang:de]
-         * Kind-Nodes.
-         [/lang]
          * @type {Array.<enchant.Node>}
          */
         this.childNodes = [];
@@ -4447,20 +3498,13 @@ enchant.Group = enchant.Class.create(enchant.Node, {
             }, this);
     },
     /**
-     [lang:ja]
      * GroupにNodeを追加する.
      * @param {enchant.Node} node 追加するNode.
-     [/lang]
-     [lang:en]
-     * Adds a Node to the Group.
-     * @param {enchant.Node} node Node to be added.
-     [/lang]
-     [lang:de]
-     * Fügt einen Node zu der Gruppe hinzu.
-     * @param {enchant.Node} node Node der hinzugeügt werden soll.
-     [/lang]
      */
     addChild: function(node) {
+        if (node.parentNode) {
+            node.parentNode.removeChild(node);
+        }
         this.childNodes.push(node);
         node.parentNode = this;
         var childAdded = new enchant.Event('childadded');
@@ -4475,23 +3519,14 @@ enchant.Group = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * GroupにNodeを挿入する.
      * @param {enchant.Node} node 挿入するNode.
      * @param {enchant.Node} reference 挿入位置の前にあるNode.
-     [/lang]
-     [lang:en]
-     * Incorporates Node into Group.
-     * @param {enchant.Node} node Node to be incorporated.
-     * @param {enchant.Node} reference Node in position before insertion.
-     [/lang]
-     [lang:de]
-     * Fügt einen Node vor einen anderen Node zu dieser Gruppe hinzu.
-     * @param {enchant.Node} node Der Node der hinzugefügt werden soll.
-     * @param {enchant.Node} reference Der Node der sich vor dem einzufügendem Node befindet.
-     [/lang]
      */
     insertBefore: function(node, reference) {
+        if (node.parentNode) {
+            node.parentNode.removeChild(node);
+        }
         var i = this.childNodes.indexOf(reference);
         if (i !== -1) {
             this.childNodes.splice(i, 0, node);
@@ -4511,18 +3546,8 @@ enchant.Group = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * GroupからNodeを削除する.
      * @param {enchant.Node} node 削除するNode.
-     [/lang]
-     [lang:en]
-     * Remove a Node from the Group.
-     * @param {enchant.Node} node Node to be deleted.
-     [/lang]
-     [lang:de]
-     * Entfernt einen Node aus der Gruppe.
-     * @param {enchant.Node} node Der Node der entfernt werden soll.
-     [/lang]
      */
     removeChild: function(node) {
         var i;
@@ -4541,15 +3566,7 @@ enchant.Group = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * 最初の子Node.
-     [/lang]
-     [lang:en]
-     * The Node which is the first child.
-     [/lang]
-     [lang:de]
-     * Der Node, welcher das erste Kind der Gruppe darstellt.
-     [/lang]
      * @type {enchant.Node}
      */
     firstChild: {
@@ -4558,15 +3575,7 @@ enchant.Group = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-     [lang:ja]
      * 最後の子Node.
-     [/lang]
-     [lang:en]
-     * The Node which is the last child.
-     [/lang]
-     [lang:de]
-     * Der Node, welcher das letzte Kind der Gruppe darstellt.
-     [/lang]
      * @type {enchant.Node}
      */
     lastChild: {
@@ -4575,15 +3584,7 @@ enchant.Group = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-    [lang:ja]
     * Groupの回転角 (度数法).
-    [/lang]
-    [lang:en]
-    * Group rotation angle (degree).
-    [/lang]
-    [lang:de]
-    * Rotationswinkel der Gruppe (Grad).
-    [/lang]
     * @type {Number}
     */
     rotation: {
@@ -4596,15 +3597,7 @@ enchant.Group = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-    [lang:ja]
     * Groupのx軸方向の倍率.
-    [/lang]
-    [lang:en]
-    * Scaling factor on the x axis of the Group.
-    [/lang]
-    [lang:de]
-    * Skalierungsfaktor auf der x-Achse der Gruppe.
-    [/lang]
     * @type {Number}
     * @see enchant.CanvasGroup.originX
     * @see enchant.CanvasGroup.originY
@@ -4619,15 +3612,7 @@ enchant.Group = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-    [lang:ja]
     * Groupのy軸方向の倍率.
-    [/lang]
-    [lang:en]
-    * Scaling factor on the y axis of the Group.
-    [/lang]
-    [lang:de]
-    * Skalierungsfaktor auf der y-Achse der Gruppe.
-    [/lang]
     * @type {Number}
     * @see enchant.CanvasGroup.originX
     * @see enchant.CanvasGroup.originY
@@ -4642,15 +3627,7 @@ enchant.Group = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-    [lang:ja]
     * 回転・拡大縮小の基準点のX座標
-    [/lang]
-    [lang:en]
-    * origin point of rotation, scaling
-    [/lang]
-    [lang:de]
-    * Ausgangspunkt für Rotation und Skalierung.
-    [/lang]
     * @type {Number}
     */
     originX: {
@@ -4663,15 +3640,7 @@ enchant.Group = enchant.Class.create(enchant.Node, {
         }
     },
     /**
-    [lang:ja]
     * 回転・拡大縮小の基準点のX座標
-    [/lang]
-    [lang:en]
-    * origin point of rotation, scaling
-    [/lang]
-    [lang:de]
-    * Ausgangspunkt für Rotation und Skalierung.
-    [/lang]
     * @type {Number}
     */
     originY: {
@@ -4701,9 +3670,6 @@ enchant.Group = enchant.Class.create(enchant.Node, {
 
 enchant.Matrix = enchant.Class.create({
     initialize: function() {
-        if (enchant.Matrix.instance) {
-            return enchant.Matrix.instance;
-        }
         this.reset();
     },
     reset: function() {
@@ -4926,8 +3892,12 @@ enchant.DomManager = enchant.Class.create({
         if(!node.__styleStatus) {
             node.__styleStatus = {};
         }
-        node._style.width = node.width + 'px';
-        node._style.height = node.height + 'px';
+        if (node.width !== null) {
+            node._style.width = node.width + 'px';
+        }
+        if (node.height !== null) {
+            node._style.height = node.height + 'px';
+        }
         node._style.opacity = node._opacity;
         node._style['background-color'] = node._backgroundColor;
         if (typeof node._visible !== 'undefined') {
@@ -5079,18 +4049,16 @@ enchant.DomLayer = enchant.Class.create(enchant.Group, {
         var core = enchant.Core.instance;
         enchant.Group.call(this);
 
-        this.width = this._width = core.width;
-        this.height = this._height = core.height;
-
         this._touchEventTarget = null;
 
         this._element = document.createElement('div');
-        this._element.style.width = this.width + 'px';
-        this._element.style.height = this.height + 'px';
         this._element.style.position = 'absolute';
 
         this._domManager = new enchant.DomManager(this, this._element);
         this._domManager.layer = this;
+
+        this.width = core.width;
+        this.height = core.height;
 
         var touch = [
             enchant.Event.TOUCH_START,
@@ -5129,6 +4097,57 @@ enchant.DomLayer = enchant.Class.create(enchant.Group, {
         this.addEventListener('childadded', __onchildadded);
 
     },
+    width: {
+        get: function() {
+            return this._width;
+        },
+        set: function(width) {
+            this._width = width;
+            this._element.style.width = width + 'px';
+        }
+    },
+    height: {
+        get: function() {
+            return this._height;
+        },
+        set: function(height) {
+            this._height = height;
+            this._element.style.height = height + 'px';
+        }
+    },
+    addChild: function(node) {
+        this.childNodes.push(node);
+        node.parentNode = this;
+        var childAdded = new enchant.Event('childadded');
+        childAdded.node = node;
+        childAdded.next = null;
+        this.dispatchEvent(childAdded);
+        node.dispatchEvent(new enchant.Event('added'));
+        if (this.scene) {
+            node.scene = this.scene;
+            var addedToScene = new enchant.Event('addedtoscene');
+            node.dispatchEvent(addedToScene);
+        }
+    },
+    insertBefore: function(node, reference) {
+        var i = this.childNodes.indexOf(reference);
+        if (i !== -1) {
+            this.childNodes.splice(i, 0, node);
+            node.parentNode = this;
+            var childAdded = new enchant.Event('childadded');
+            childAdded.node = node;
+            childAdded.next = reference;
+            this.dispatchEvent(childAdded);
+            node.dispatchEvent(new enchant.Event('added'));
+            if (this.scene) {
+                node.scene = this.scene;
+                var addedToScene = new enchant.Event('addedtoscene');
+                node.dispatchEvent(addedToScene);
+            }
+        } else {
+            this.addChild(node);
+        }
+    },
     _startRendering: function() {
         this.addEventListener('exitframe', this._onexitframe);
         this._onexitframe();
@@ -5159,12 +4178,9 @@ enchant.DomLayer = enchant.Class.create(enchant.Group, {
         node._dirty = false;
     },
     _determineEventTarget: function() {
-        if (this._touchEventTarget) {
-            if (this._touchEventTarget !== this) {
-                return this._touchEventTarget;
-            }
-        }
-        return null;
+        var target = this._touchEventTarget;
+        this._touchEventTarget = null;
+        return (target === this) ? null : target;
     }
 });
 
@@ -5214,18 +4230,8 @@ enchant.CanvasLayer = enchant.Class.create(enchant.Group, {
     /**
      * @name enchant.CanvasLayer
      * @class
-     [lang:ja]
      * Canvas を用いた描画を行うクラス.
      * 子を Canvas を用いた描画に切り替えるクラス
-     [/lang]
-     [lang:en]
-     * A class which is using HTML Canvas for the rendering.
-     * The rendering of children will be replaced by the Canvas rendering.
-     [/lang]
-     [lang:de]
-     * Eine Klasse die HTML Canvas für das Rendern nutzt.
-     * Das Rendern der Kinder wird durch das Canvas Rendering ersetzt.
-     [/lang]
      * @constructs
      */
     initialize: function() {
@@ -5239,19 +4245,12 @@ enchant.CanvasLayer = enchant.Class.create(enchant.Group, {
         };
         this._cvsCache.layer = this;
 
-        this.width = core.width;
-        this.height = core.height;
-
         this._element = document.createElement('canvas');
-        this._element.width = core.width;
-        this._element.height = core.height;
         this._element.style.position = 'absolute';
         // issue 179
         this._element.style.left = this._element.style.top = '0px';
 
         this._detect = document.createElement('canvas');
-        this._detect.width = core.width;
-        this._detect.height = core.height;
         this._detect.style.position = 'absolute';
         this._lastDetected = 0;
 
@@ -5259,6 +4258,9 @@ enchant.CanvasLayer = enchant.Class.create(enchant.Group, {
         this._dctx = this._detect.getContext('2d');
 
         this._colorManager = new enchant.DetectColorManager(16, 256);
+
+        this.width = core.width;
+        this.height = core.height;
 
         var touch = [
             enchant.Event.TOUCH_START,
@@ -5290,7 +4292,7 @@ enchant.CanvasLayer = enchant.Class.create(enchant.Group, {
             }
             child._dirty = true;
             enchant.Matrix.instance.stack.push(self._matrix);
-            layer._rendering(child, render);
+            enchant.CanvasRenderer.instance.render(layer.context, child, render);
             enchant.Matrix.instance.stack.pop(self._matrix);
         };
 
@@ -5310,10 +4312,59 @@ enchant.CanvasLayer = enchant.Class.create(enchant.Group, {
         this.addEventListener('childadded', __onchildadded);
 
     },
+    width: {
+        get: function() {
+            return this._width;
+        },
+        set: function(width) {
+            this._width = width;
+            this._element.width = this._detect.width = width;
+        }
+    },
+    height: {
+        get: function() {
+            return this._height;
+        },
+        set: function(height) {
+            this._height = height;
+            this._element.height = this._detect.height = height;
+        }
+    },
+    addChild: function(node) {
+        this.childNodes.push(node);
+        node.parentNode = this;
+        var childAdded = new enchant.Event('childadded');
+        childAdded.node = node;
+        childAdded.next = null;
+        this.dispatchEvent(childAdded);
+        node.dispatchEvent(new enchant.Event('added'));
+        if (this.scene) {
+            node.scene = this.scene;
+            var addedToScene = new enchant.Event('addedtoscene');
+            node.dispatchEvent(addedToScene);
+        }
+    },
+    insertBefore: function(node, reference) {
+        var i = this.childNodes.indexOf(reference);
+        if (i !== -1) {
+            this.childNodes.splice(i, 0, node);
+            node.parentNode = this;
+            var childAdded = new enchant.Event('childadded');
+            childAdded.node = node;
+            childAdded.next = reference;
+            this.dispatchEvent(childAdded);
+            node.dispatchEvent(new enchant.Event('added'));
+            if (this.scene) {
+                node.scene = this.scene;
+                var addedToScene = new enchant.Event('addedtoscene');
+                node.dispatchEvent(addedToScene);
+            }
+        } else {
+            this.addChild(node);
+        }
+    },
     /**
-     * [lang:ja]
      * レンダリングを開始.
-     * [/lang]
      * @private
      */
     _startRendering: function() {
@@ -5321,9 +4372,7 @@ enchant.CanvasLayer = enchant.Class.create(enchant.Group, {
         this._onexitframe(new enchant.Event(enchant.Event.RENDER));
     },
     /**
-     * [lang:ja]
      * レンダリングを停止.
-     * [/lang]
      * @private
      */
     _stopRendering: function() {
@@ -5335,112 +4384,7 @@ enchant.CanvasLayer = enchant.Class.create(enchant.Group, {
         var ctx = this.context;
         ctx.clearRect(0, 0, core.width, core.height);
         var render = new enchant.Event(enchant.Event.RENDER);
-        this._rendering(this, render);
-    },
-    _rendering:  function(node, e) {
-        var core = enchant.Core.instance;
-        var matrix = enchant.Matrix.instance;
-        var stack = matrix.stack;
-        var width = node.width;
-        var height = node.height;
-        var ctx = this.context;
-        var child;
-        ctx.save();
-        node.dispatchEvent(e);
-        // composite
-        if (node.compositeOperation) {
-            ctx.globalCompositeOperation = node.compositeOperation;
-        } else {
-            ctx.globalCompositeOperation = 'source-over';
-        }
-        ctx.globalAlpha = (typeof node._opacity === 'number') ? node._opacity : 1.0;
-        // transform
-        this._transform(node, ctx);
-        // render
-        if (typeof node._visible === 'undefined' || node._visible) {
-            if (node._backgroundColor) {
-                ctx.fillStyle = node._backgroundColor;
-                ctx.fillRect(0, 0, width, height);
-            }
-
-            if (node.cvsRender) {
-                node.cvsRender(ctx);
-            }
-
-            if (core._debug) {
-                if (node instanceof enchant.Label || node instanceof enchant.Sprite) {
-                    ctx.strokeStyle = '#ff0000';
-                } else {
-                    ctx.strokeStyle = '#0000ff';
-                }
-                ctx.strokeRect(0, 0, width, height);
-            }
-            if (node._clipping) {
-                ctx.beginPath();
-                ctx.rect(0, 0, width, height);
-                ctx.clip();
-            }
-        }
-        if (node.childNodes) {
-            for (var i = 0, l = node.childNodes.length; i < l; i++) {
-                child = node.childNodes[i];
-                this._rendering(child, e);
-            }
-        }
-        ctx.restore();
-        enchant.Matrix.instance.stack.pop();
-    },
-    _detectrendering: function(node) {
-        var width = node.width;
-        var height = node.height;
-        var ctx = this._dctx;
-        var child;
-        ctx.save();
-        this._transform(node, ctx);
-        ctx.fillStyle = node._cvsCache.detectColor;
-        if (node._touchEnabled) {
-            if (node.detectRender) {
-                node.detectRender(ctx);
-            } else {
-                ctx.fillRect(0, 0, width, height);
-            }
-        }
-        if (node._clipping) {
-            ctx.beginPath();
-            ctx.rect(0, 0, width, height);
-            ctx.clip();
-        }
-        if (node.childNodes) {
-            for (var i = 0, l = node.childNodes.length; i < l; i++) {
-                child = node.childNodes[i];
-                this._detectrendering(child);
-            }
-        }
-        ctx.restore();
-        enchant.Matrix.instance.stack.pop();
-    },
-    _transform: function(node, ctx) {
-        var matrix = enchant.Matrix.instance;
-        var stack = matrix.stack;
-        var newmat;
-        if (node._dirty) {
-            matrix.makeTransformMatrix(node, node._cvsCache.matrix);
-            newmat = [];
-            matrix.multiply(stack[stack.length - 1], node._cvsCache.matrix, newmat);
-            node._matrix = newmat;
-        } else {
-            newmat = node._matrix;
-        }
-        stack.push(newmat);
-        ctx.setTransform.apply(ctx, newmat);
-        var ox = (typeof node._originX === 'number') ? node._originX : node._width / 2 || 0;
-        var oy = (typeof node._originY === 'number') ? node._originY : node._height / 2 || 0;
-        var vec = [ ox, oy ];
-        matrix.multiplyVec(newmat, vec, vec);
-        node._offsetX = vec[0] - ox;
-        node._offsetY = vec[1] - oy;
-        node._dirty = false;
-
+        enchant.CanvasRenderer.instance.render(ctx, this, render);
     },
     _determineEventTarget: function(e) {
         return this._getEntityByPosition(e.x, e.y);
@@ -5450,7 +4394,7 @@ enchant.CanvasLayer = enchant.Class.create(enchant.Group, {
         var ctx = this._dctx;
         if (this._lastDetected < core.frame) {
             ctx.clearRect(0, 0, this.width, this.height);
-            this._detectrendering(this);
+            enchant.CanvasRenderer.instance.detectRender(ctx, this);
             this._lastDetected = core.frame;
         }
         var color = ctx.getImageData(x, y, 1, 1).data;
@@ -5491,6 +4435,105 @@ enchant.CanvasLayer._detachCache = function(node, layer, onchildadded, onchildre
     }
 };
 
+enchant.CanvasRenderer = enchant.Class.create({
+    render: function(ctx, node, e) {
+        var width, height, child;
+        ctx.save();
+        node.dispatchEvent(e);
+        // transform
+        this.transform(ctx, node);
+        if (typeof node._visible === 'undefined' || node._visible) {
+            width = node.width;
+            height = node.height;
+            // composite
+            if (node.compositeOperation) {
+                ctx.globalCompositeOperation = node.compositeOperation;
+            }
+            ctx.globalAlpha = (typeof node._opacity === 'number') ? node._opacity : 1.0;
+            // render
+            if (node._backgroundColor) {
+                ctx.fillStyle = node._backgroundColor;
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            if (node.cvsRender) {
+                node.cvsRender(ctx);
+            }
+
+            if (enchant.Core.instance._debug && node._debugColor) {
+                ctx.strokeStyle = node._debugColor;
+                ctx.strokeRect(0, 0, width, height);
+            }
+            if (node._clipping) {
+                ctx.beginPath();
+                ctx.rect(0, 0, width, height);
+                ctx.clip();
+            }
+            if (node.childNodes) {
+                for (var i = 0, l = node.childNodes.length; i < l; i++) {
+                    child = node.childNodes[i];
+                    this.render(ctx, child, e);
+                }
+            }
+        }
+        ctx.restore();
+        enchant.Matrix.instance.stack.pop();
+    },
+    detectRender: function(ctx, node) {
+        var width, height, child;
+        if (typeof node._visible === 'undefined' || node._visible) {
+            width = node.width;
+            height = node.height;
+            ctx.save();
+            this.transform(ctx, node);
+            ctx.fillStyle = node._cvsCache.detectColor;
+            if (node._touchEnabled) {
+                if (node.detectRender) {
+                    node.detectRender(ctx);
+                } else {
+                    ctx.fillRect(0, 0, width, height);
+                }
+            }
+            if (node._clipping) {
+                ctx.beginPath();
+                ctx.rect(0, 0, width, height);
+                ctx.clip();
+            }
+            if (node.childNodes) {
+                for (var i = 0, l = node.childNodes.length; i < l; i++) {
+                    child = node.childNodes[i];
+                    this.detectRender(ctx, child);
+                }
+            }
+            ctx.restore();
+            enchant.Matrix.instance.stack.pop();
+        }
+    },
+    transform: function(ctx, node) {
+        var matrix = enchant.Matrix.instance;
+        var stack = matrix.stack;
+        var newmat, ox, oy, vec;
+        if (node._dirty) {
+            matrix.makeTransformMatrix(node, node._cvsCache.matrix);
+            newmat = [];
+            matrix.multiply(stack[stack.length - 1], node._cvsCache.matrix, newmat);
+            node._matrix = newmat;
+            ox = (typeof node._originX === 'number') ? node._originX : node._width / 2 || 0;
+            oy = (typeof node._originY === 'number') ? node._originY : node._height / 2 || 0;
+            vec = [ ox, oy ];
+            matrix.multiplyVec(newmat, vec, vec);
+            node._offsetX = vec[0] - ox;
+            node._offsetY = vec[1] - oy;
+            node._dirty = false;
+        } else {
+            newmat = node._matrix;
+        }
+        stack.push(newmat);
+        ctx.setTransform.apply(ctx, newmat);
+    }
+});
+enchant.CanvasRenderer.instance = new enchant.CanvasRenderer();
+
 /**
  * @scope enchant.Scene.prototype
  * @type {*}
@@ -5499,20 +4542,12 @@ enchant.Scene = enchant.Class.create(enchant.Group, {
     /**
      * @name enchant.Scene
      * @class
-     [lang:ja]
      * 表示オブジェクトツリーのルートになるクラス.
      * シーンはレイヤーを持っていて、子として追加されたオブジェクト (Entity) は描画方法に応じてレイヤーに振り分けられる。
      * Scene クラスは最も汎用的なシーンの実装で、({@link enchant.DOMLayer} と {@link enchant.CanvasLayer}) を持っており、
      * それぞれ DOM, Canvas を用いて描画される。描画順は DOM が手前、Canvas が奥で、
      * 各レイヤーの間では新しく追加されたオブジェクトほど手前に表示される。
      * Scene クラスを継承することで、新しい種類の Layer を持つシーンクラスを作ることができる。
-     [/lang]
-     [lang:en]
-     * A Class that becomes the root of the display object tree.
-     [/lang]
-     [lang:de]
-     * Eine Klasse die zur Wurzel im Darstellungsobjektbaum wird.
-     [/lang]
      *
      * @example
      *   var scene = new Scene();
@@ -5529,9 +4564,6 @@ enchant.Scene = enchant.Class.create(enchant.Group, {
         // Call initialize method of enchant.Group
         enchant.Group.call(this);
 
-        this.width = core.width;
-        this.height = core.height;
-
         // All nodes (entities, groups, scenes) have reference to the scene that it belongs to.
         this.scene = this;
 
@@ -5539,12 +4571,9 @@ enchant.Scene = enchant.Class.create(enchant.Group, {
 
         // Create div tag which possesses its layers
         this._element = document.createElement('div');
-        this._element.style.width = this.width + 'px';
-        this._element.style.height = this.height + 'px';
         this._element.style.position = 'absolute';
         this._element.style.overflow = 'hidden';
         this._element.style[enchant.ENV.VENDOR_PREFIX + 'TransformOrigin'] = '0 0';
-        this._element.style[enchant.ENV.VENDOR_PREFIX + 'Transform'] = 'scale(' + enchant.Core.instance.scale + ')';
 
         this._layers = {};
         this._layerPriority = [];
@@ -5562,6 +4591,10 @@ enchant.Scene = enchant.Class.create(enchant.Group, {
                 layer.dispatchEvent(new enchant.Event(enchant.Event.EXIT_FRAME));
             }
         };
+
+        this.addEventListener(enchant.Event.CORE_RESIZE, this._oncoreresize);
+
+        this._oncoreresize(core);
     },
     x: {
         get: function() {
@@ -5582,6 +4615,28 @@ enchant.Scene = enchant.Class.create(enchant.Group, {
             this._y = y;
             for (var type in this._layers) {
                 this._layers[type].y = y;
+            }
+        }
+    },
+    width: {
+        get: function() {
+            return this._width;
+        },
+        set: function(width) {
+            this._width = width;
+            for (var type in this._layers) {
+                this._layers[type].width = width;
+            }
+        }
+    },
+    height: {
+        get: function() {
+            return this._height;
+        },
+        set: function(height) {
+            this._height = height;
+            for (var type in this._layers) {
+                this._layers[type].height = height;
             }
         }
     },
@@ -5626,6 +4681,17 @@ enchant.Scene = enchant.Class.create(enchant.Group, {
             this._backgroundColor = this._element.style.backgroundColor = color;
         }
     },
+    _oncoreresize: function(e) {
+        this._element.style.width = e.width + 'px';
+        this.width = e.width;
+        this._element.style.height = e.height + 'px';
+        this.height = e.height;
+        this._element.style[enchant.ENV.VENDOR_PREFIX + 'Transform'] = 'scale(' + e.scale + ')';
+
+        for (var type in this._layers) {
+            this._layers[type].dispatchEvent(e);
+        }
+    },
     addLayer: function(type, i) {
         var core = enchant.Core.instance;
         if (this._layers[type]) {
@@ -5668,19 +4734,19 @@ enchant.Scene = enchant.Class.create(enchant.Group, {
     _onchildadded: function(e) {
         var child = e.node;
         var next = e.next;
+        var target, i;
         if (child._element) {
-            if (!this._layers.Dom) {
-                this.addLayer('Dom', 1);
-            }
-            this._layers.Dom.insertBefore(child, next);
-            child._layer = this._layers.Dom;
+            target = 'Dom';
+            i = 1;
         } else {
-            if (!this._layers.Canvas) {
-                this.addLayer('Canvas', 0);
-            }
-            this._layers.Canvas.insertBefore(child, next);
-            child._layer = this._layers.Canvas;
+            target = 'Canvas';
+            i = 0;
         }
+        if (!this._layers[target]) {
+            this.addLayer(target, i);
+        }
+        child._layer = this._layers[target];
+        this._layers[target].insertBefore(child, next);
         child.parentNode = this;
     },
     _onchildremoved: function(e) {
@@ -5703,6 +4769,69 @@ enchant.Scene = enchant.Class.create(enchant.Group, {
 });
 
 /**
+ * @scope enchant.LoadingScene.prototype
+ */
+enchant.LoadingScene = enchant.Class.create(enchant.Scene, {
+    /**
+     * @name enchant.LoadingScene.
+     * @class
+     * @constructs
+     * @extends enchant.Scene
+     * Default loading scene. If you want to use your own loading animation, overwrite (don't inherit) this class.
+     * Referred from enchant.Core in default, as `new enchant.LoadingScene` etc.
+     *
+     * @usage
+     * enchant.LoadingScene = enchant.Class.create(enchant.Scene, {
+     *    initialize: function(){
+     *        enchant.Scene.call(this);
+     *        this.backgroundColor = 'red';
+     *        // ...
+     *        this.addEventListener('progress', function(e){
+     *            progress = e.loaded / e.total;
+     *        });
+     *        this.addEventListener('enterframe', function(){
+     *            // animation
+     *        });
+     *    }
+     * });
+     */
+    initialize: function() {
+        enchant.Scene.call(this);
+        this.backgroundColor = '#000';
+        var barWidth = this.width * 0.4 | 0;
+        var barHeight = this.width * 0.05 | 0;
+        var border = barWidth * 0.03 | 0;
+        var bar = new enchant.Sprite(barWidth, barHeight);
+        bar.disableCollection();
+        bar.x = (this.width - barWidth) / 2;
+        bar.y = (this.height - barHeight) / 2;
+        var image = new enchant.Surface(barWidth, barHeight);
+        image.context.fillStyle = '#fff';
+        image.context.fillRect(0, 0, barWidth, barHeight);
+        image.context.fillStyle = '#000';
+        image.context.fillRect(border, border, barWidth - border * 2, barHeight - border * 2);
+        bar.image = image;
+        var progress = 0, _progress = 0;
+        this.addEventListener('progress', function(e) {
+            // avoid #167 https://github.com/wise9/enchant.js/issues/177
+            progress = e.loaded / e.total * 1.0;
+        });
+        bar.addEventListener('enterframe', function() {
+            _progress *= 0.9;
+            _progress += progress * 0.1;
+            image.context.fillStyle = '#fff';
+            image.context.fillRect(border, 0, (barWidth - border * 2) * _progress, barHeight);
+        });
+        this.addChild(bar);
+        this.addEventListener('load', function(e) {
+            var core = enchant.Core.instance;
+            core.removeScene(core.loadingScene);
+            core.dispatchEvent(e);
+        });
+    }
+});
+
+/**
  * @scope enchant.CanvasScene.prototype
  * @type {*}
  */
@@ -5721,8 +4850,8 @@ enchant.CanvasScene = enchant.Class.create(enchant.Scene, {
     _onchildadded: function(e) {
         var child = e.node;
         var next = e.next;
-        this._layers.Canvas.insertBefore(child, next);
         child._layer = this._layers.Canvas;
+        this._layers.Canvas.insertBefore(child, next);
     },
     _onenter: function() {
         this._layers.Canvas._startRendering();
@@ -5753,8 +4882,8 @@ enchant.DOMScene = enchant.Class.create(enchant.Scene, {
     _onchildadded: function(e) {
         var child = e.node;
         var next = e.next;
-        this._layers.Dom.insertBefore(child, next);
         child._layer = this._layers.Dom;
+        this._layers.Dom.insertBefore(child, next);
     },
     _onenter: function() {
         this._layers.Dom._startRendering();
@@ -5773,7 +4902,6 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
     /**
      * @name enchant.Surface
      * @class
-     [lang:ja]
      * canvas要素をラップしたクラス.
      *
      * {@link enchant.Sprite}や{@link enchant.Map}のimageプロパティに設定して表示させることができる.
@@ -5790,45 +4918,6 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
      *
      * @param {Number} width Surfaceの横幅.
      * @param {Number} height Surfaceの高さ.
-     [/lang]
-     [lang:en]
-     * Class that wraps canvas elements.
-     *
-     * Can be used to set the {@link enchant.Sprite} and {@link enchant.Map}'s image properties to be displayed.
-     * If you wish to access Canvas API use the {@link enchant.Surface#context} property.
-     *
-     * @example
-     *   // Creates Sprite that displays a circle.
-     *   var ball = new Sprite(50, 50);
-     *   var surface = new Surface(50, 50);
-     *   surface.context.beginPath();
-     *   surface.context.arc(25, 25, 25, 0, Math.PI*2, true);
-     *   surface.context.fill();
-     *   ball.image = surface;
-     *
-     * @param {Number} width Surface width.
-     * @param {Number} height Surface height.
-     [/lang]
-     [lang:de]
-     * Diese Klasse dient als Hüllenklasse (Wrapper) für Canvas Elemente.
-     *
-     * Mit dieser Klasse können die image Felder der {@link enchant.Sprite} und {@link enchant.Map}'s
-     * Klassen gesetzt werden und dadurch dargestellt werden.
-     * Falls die Canvas API genutzt werden möchte kann dies über die
-     * {@link enchant.Surface#context} Variable erfolgen.
-     *
-     * @example
-     *   // Erstellt einen Sprite und stellt einen Kreis dar.
-     *   var ball = new Sprite(50, 50);
-     *   var surface = new Surface(50, 50);
-     *   surface.context.beginPath();
-     *   surface.context.arc(25, 25, 25, 0, Math.PI*2, true);
-     *   surface.context.fill();
-     *   ball.image = surface;
-     *
-     * @param {Number} width Die Breite der Surface.
-     * @param {Number} height Die Höhe der Surface.
-     [/lang]
      * @constructs
      */
     initialize: function(width, height) {
@@ -5837,41 +4926,17 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
         var core = enchant.Core.instance;
 
         /**
-         [lang:ja]
          * Surfaceの横幅.
-         [/lang]
-         [lang:en]
-         * Surface width.
-         [/lang]
-         [lang:de]
-         * Die Breite der Surface.
-         [/lang]
          * @type {Number}
          */
         this.width = width;
         /**
-         [lang:ja]
          * Surfaceの高さ.
-         [/lang]
-         [lang:en]
-         * Surface height.
-         [/lang]
-         [lang:de]
-         * Die Höhe der Surface.
-         [/lang]
          * @type {Number}
          */
         this.height = height;
         /**
-         [lang:ja]
          * Surfaceの描画コンテクスト.
-         [/lang]
-         [lang:en]
-         * Surface drawing context.
-         [/lang]
-         [lang:de]
-         * Der Surface Zeichenkontext.
-         [/lang]
          * @type {CanvasRenderingContext2D}
          */
         this.context = null;
@@ -5906,30 +4971,15 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
         }
     },
     /**
-     [lang:ja]
      * Surfaceから1ピクセル取得する.
      * @param {Number} x 取得するピクセルのx座標.
      * @param {Number} y 取得するピクセルのy座標.
      * @return {Array.<Number>} ピクセルの情報を[r, g, b, a]の形式で持つ配列.
-     [/lang]
-     [lang:en]
-     * Returns 1 pixel from the Surface.
-     * @param {Number} x The pixel's x coordinates.
-     * @param {Number} y The pixel's y coordinates.
-     * @return {Array.<Number>} An array that holds pixel information in [r, g, b, a] format.
-     [/lang]
-     [lang:de]
-     * Liefert einen Pixel der Surface.
-     * @param {Number} x Die x Koordinaten des Pixel.
-     * @param {Number} y Die y Koordinaten des Pixel.
-     * @return {Array.<Number>} Ein Array das die Pixelinformationen im [r, g, b, a] Format enthält.
-     [/lang]
      */
     getPixel: function(x, y) {
         return this.context.getImageData(x, y, 1, 1).data;
     },
     /**
-     [lang:ja]
      * Surfaceに1ピクセル設定する.
      * @param {Number} x 設定するピクセルのx座標.
      * @param {Number} y 設定するピクセルのy座標.
@@ -5937,25 +4987,6 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
      * @param {Number} g 設定するピクセルのgの値.
      * @param {Number} b 設定するピクセルのbの値.
      * @param {Number} a 設定するピクセルの透明度.
-     [/lang]
-     [lang:en]
-     * Sets one pixel within the surface.
-     * @param {Number} x The pixel's x coordinates.
-     * @param {Number} y The pixel's y coordinates.
-     * @param {Number} r The pixel's red level.
-     * @param {Number} g The pixel's green level.
-     * @param {Number} b The pixel's blue level.
-     * @param {Number} a The pixel's transparency.
-     [/lang]
-     [lang:de]
-     * Setzt einen Pixel in der Surface.
-     * @param {Number} x Die x Koordinaten des Pixel.
-     * @param {Number} y Die y Koordinaten des Pixel.
-     * @param {Number} r Der Rotwert des Pixel.
-     * @param {Number} g Der Grünwert des Pixel.
-     * @param {Number} b Der Blauwert des Pixels.
-     * @param {Number} a Die Transparenz des Pixels
-     [/lang]
      */
     setPixel: function(x, y, r, g, b, a) {
         var pixel = this.context.createImageData(1, 1);
@@ -5966,21 +4997,12 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
         this.context.putImageData(pixel, x, y);
     },
     /**
-     [lang:ja]
      * Surfaceの全ピクセルをクリアし透明度0の黒に設定する.
-     [/lang]
-     [lang:en]
-     * Clears all Surface pixels and makes the pixels transparent.
-     [/lang]
-     [lang:de]
-     * Löscht alle Pixel und setzt macht die Pixel transparent.
-     [/lang]
      */
     clear: function() {
         this.context.clearRect(0, 0, this.width, this.height);
     },
     /**
-     [lang:ja]
      * Surfaceに対して引数で指定されたSurfaceを描画する.
      *
      * Canvas APIのdrawImageをラップしており, 描画する矩形を同様の形式で指定できる.
@@ -5996,45 +5018,6 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
      *   dst.draw(src, 10, 10, 40, 40, 50, 50, 30, 30);
      *
      * @param {enchant.Surface} image 描画に用いるSurface.
-     [/lang]
-     [lang:en]
-     * Draws the content of the given Surface onto this surface.
-     *
-     * Wraps Canvas API drawImage and if multiple arguments are given,
-     * these are getting applied to the Canvas drawImage method.
-     *
-     * @example
-     *   var src = core.assets['src.gif'];
-     *   var dst = new Surface(100, 100);
-     *   dst.draw(src);         // Draws source at (0, 0)
-     *   dst.draw(src, 50, 50); // Draws source at (50, 50)
-     *   // Draws just 30 horizontal and vertical pixels of source at (50, 50)
-     *   dst.draw(src, 50, 50, 30, 30);
-     *   // Takes the image content in src starting at (10,10) with a (Width, Height) of (40,40),
-     *   // scales it and draws it in this surface at (50, 50) with a (Width, Height) of (30,30).
-     *   dst.draw(src, 10, 10, 40, 40, 50, 50, 30, 30);
-     *
-     * @param {enchant.Surface} image Surface used in drawing.
-     [/lang]
-     [lang:de]
-     * Zeichnet den Inhalt der gegebenen Surface auf diese Surface.
-     *
-     * Umhüllt (wraps) die Canvas drawImage Methode und sollten mehrere Argumente
-     * übergeben werden, werden diese auf die Canvas drawImage Methode angewendet.
-     *
-     * @example
-     *   var src = core.assets['src.gif'];
-     *   var dst = new Surface(100, 100);
-     *   dst.draw(src);         // Zeichnet src bei (0, 0)
-     *   dst.draw(src, 50, 50); // Zeichnet src bei (50, 50)
-     *   // Zeichnet src an der Position (50,50), jedoch nur 30x30 Pixel
-     *   dst.draw(src, 50, 50, 30, 30);
-     *   // Skaliert und zeichnet den Bereich mit der (Breite, Höhe) von (40, 40)
-     *   // in src ab (10,10) in diese Surface bei (50,50) mit einer (Breite, Höhe) von (30, 30).
-     *   dst.draw(src, 10, 10, 40, 40, 50, 50, 30, 30);
-     *
-     * @param {enchant.Surface} image Surface used in drawing.
-     [/lang]
      */
     draw: function(image) {
         image = image._element;
@@ -6047,18 +5030,8 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
         }
     },
     /**
-     [lang:ja]
      * Surfaceを複製する.
      * @return {enchant.Surface} 複製されたSurface.
-     [/lang]
-     [lang:en]
-     * Copies Surface.
-     * @return {enchant.Surface} The copied Surface.
-     [/lang]
-     [lang:de]
-     * Kopiert diese Surface.
-     * @return {enchant.Surface} Die kopierte Surface.
-     [/lang]
      */
     clone: function() {
         var clone = new enchant.Surface(this.width, this.height);
@@ -6066,20 +5039,8 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
         return clone;
     },
     /**
-     [lang:ja]
      * SurfaceからdataスキームのURLを生成する.
      * @return {String} Surfaceを表すdataスキームのURL.
-     [/lang]
-     [lang:en]
-     * Creates a data URI scheme from this Surface.
-     * @return {String} The data URI scheme that identifies this Surface and
-     * can be used to include this Surface into a dom tree.
-     [/lang]
-     [lang:de]
-     * Erstellt eine Data-URL (URI Schema) für diese Surface.
-     * @return {String} Die Data-URL, welche diese Surface identifiziert und
-     * welche genutzt werden kann um diese in einen DOM Baum einzubinden.
-     [/lang]
      */
     toDataURL: function() {
         var src = this._element.src;
@@ -6096,7 +5057,6 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
 });
 
 /**
- [lang:ja]
  * 画像ファイルを読み込んでSurfaceオブジェクトを作成する.
  *
  * このメソッドによって作成されたSurfaceはimg要素のラップしており{@link enchant.Surface#context}プロパティに
@@ -6107,34 +5067,12 @@ enchant.Surface = enchant.Class.create(enchant.EventTarget, {
  * 場合はピクセルを取得するなど画像操作の一部が制限される).
  *
  * @param {String} src ロードする画像ファイルのパス.
- [/lang]
- [lang:en]
- * Loads an image and creates a Surface object out of it.
- *
- * It is not possible to access properties or methods of the {@link enchant.Surface#context}, or to call methods using the Canvas API -
- * like {@link enchant.Surface#draw}, {@link enchant.Surface#clear}, {@link enchant.Surface#getPixel}, {@link enchant.Surface#setPixel}.. -
- * of the wrapped image created with this method.
- * However, it is possible to use this surface to draw it to another surface using the {@link enchant.Surface#draw} method.
- * The resulting surface can then be manipulated. (when loading images in a cross-origin resource sharing environment,
- * pixel acquisition and other image manipulation might be limited).
- *
- * @param {String} src The file path of the image to be loaded.
- [/lang]
- [lang:de]
- * Läd eine Grafik und erstellt daraus ein Surface Objekt.
- *
- * Bei Grafiken die mit dieser Methode erstellt wurden ist es nicht möglich auf Variablen oder Methoden des {@link enchant.Surface#context}
- * zuzugreifen, oder Methoden die die Canvas API nutzen, wie {@link enchant.Surface#draw}, {@link enchant.Surface#clear},
- * {@link enchant.Surface#getPixel}, {@link enchant.Surface#setPixel}.., aufzurufen.
- * Jedoch ist es möglich diese Surface zu nutzen um sie in eine andere Surface mittels der {@link enchant.Surface#draw} zu zeichen.
- * Die daraus resultierende Surface kann dann manipuliert werden. (Wenn Bilder in einer Cross-Origin Resource Sharing Umgebung
- * geladen werden, kann es sein, dass die Pixelabfrage und andere Bildmanipulationen limitiert sind)
- *
- * @param {String} src Der Dateipfad der Grafik die geladen werden soll.
- [/lang]
+ * @param {Function} callback ロード完了時のコールバック.
+ * @param {Function} [onerror] ロード失敗時のコールバック.
  * @static
+ * @return {enchant.Surface} Surface
  */
-enchant.Surface.load = function(src, callback) {
+enchant.Surface.load = function(src, callback, onerror) {
     var image = new Image();
     var surface = Object.create(enchant.Surface.prototype, {
         context: { value: null },
@@ -6142,11 +5080,14 @@ enchant.Surface.load = function(src, callback) {
         _element: { value: image }
     });
     enchant.EventTarget.call(surface);
-    if (typeof callback === 'function') {
-        surface.addEventListener('load', callback);
-    }
+    onerror = onerror || function() {};
+    surface.addEventListener('load', callback);
+    surface.addEventListener('error', onerror);
     image.onerror = function() {
-        throw new Error('Cannot load an asset: ' + image.src);
+        var e = new enchant.Event(enchant.Event.ERROR);
+        e.message = 'Cannot load an asset: ' + image.src;
+        enchant.Core.instance.dispatchEvent(e);
+        surface.dispatchEvent(e);
     };
     image.onload = function() {
         surface.width = image.width;
@@ -6156,6 +5097,119 @@ enchant.Surface.load = function(src, callback) {
     image.src = src;
     return surface;
 };
+enchant.Surface._staticCanvas2DContext = document.createElement('canvas').getContext('2d');
+
+enchant.Surface._getPattern = function(surface, force) {
+    if (!surface._pattern || force) {
+        surface._pattern = this._staticCanvas2DContext.createPattern(surface._element, 'repeat');
+    }
+    return surface._pattern;
+};
+
+if (window.Deferred) {
+    enchant.Deferred = window.Deferred;
+} else {
+    enchant.Deferred = enchant.Class.create({
+        initialize: function() {
+            this._succ = this._fail = this._next = this._id = null;
+            this._tail = this;
+        },
+        next: function(func) {
+            var q = new enchant.Deferred();
+            q._succ = func;
+            return this._add(q);
+        },
+        error: function(func) {
+            var q = new enchant.Deferred();
+            q._fail = func;
+            return this._add(q);
+        },
+        _add: function(queue) {
+            this._tail._next = queue;
+            this._tail = queue;
+            return this;
+        },
+        call: function(arg) {
+            var received;
+            var queue = this;
+            while (queue && !queue._succ) {
+                queue = queue._next;
+            }
+            if (!(queue instanceof enchant.Deferred)) {
+                return;
+            }
+            try {
+                received = queue._succ(arg);
+            } catch (e) {
+                return queue.fail(e);
+            }
+            if (received instanceof enchant.Deferred) {
+                enchant.Deferred._insert(queue, received);
+            } else if (queue._next instanceof enchant.Deferred) {
+                queue._next.call(received);
+            }
+        },
+        fail: function(arg) {
+            var result, err,
+                queue = this;
+            while (queue && !queue._fail) {
+                queue = queue._next;
+            }
+            if (queue instanceof enchant.Deferred) {
+                result = queue._fail(arg);
+                queue.call(result);
+            } else if (arg instanceof Error) {
+                throw arg;
+            } else {
+                err = new Error('failed in Deferred');
+                err.arg = arg;
+                throw err;
+            }
+        }
+    });
+    enchant.Deferred._insert = function(queue, ins) {
+        if (queue._next instanceof enchant.Deferred) {
+            ins._next = queue._next;
+        }
+        queue._next = ins;
+    };
+    enchant.Deferred.next = function(func) {
+        var q = new enchant.Deferred().next(func);
+        q._id = setTimeout(function() { q.call(); }, 0);
+        return q;
+    };
+    enchant.Deferred.parallel = function(arg) {
+        var q = new enchant.Deferred();
+        q._id = setTimeout(function() { q.call(); }, 0);
+        var progress = 0;
+        var ret = (arg instanceof Array) ? [] : {};
+        var p = new enchant.Deferred();
+        for (var prop in arg) {
+            if (arg.hasOwnProperty(prop)) {
+                progress++;
+                /*jshint loopfunc:true */
+                (function(queue, name) {
+                    queue.next(function(arg) {
+                        progress--;
+                        ret[name] = arg;
+                        if (progress <= 0) {
+                            p.call(ret);
+                        }
+                    })
+                    .error(function(err) { p.fail(err); });
+                    if (typeof queue._id === 'number') {
+                        clearTimeout(queue._id);
+                    }
+                    queue._id = setTimeout(function() { queue.call(); }, 0);
+                }(arg[prop], prop));
+            }
+        }
+        if (!progress) {
+            p._id = setTimeout(function() { p.call(ret); }, 0);
+        }
+        return q.next(function() { return p; });
+    };
+}
 
 /**
  * @scope enchant.DOMSound.prototype
@@ -6165,7 +5219,6 @@ enchant.DOMSound = enchant.Class.create(enchant.EventTarget, {
     /**
      * @name enchant.DOMSound
      * @class
-     [lang:ja]
      * audio要素をラップしたクラス.
      *
      * MP3ファイルの再生はSafari, Chrome, Firefox, Opera, IEが対応
@@ -6174,57 +5227,19 @@ enchant.DOMSound = enchant.Class.create(enchant.EventTarget, {
      * のコーデックに対応していない場合は再生されない.
      *
      * コンストラクタではなく{@link enchant.DOMSound.load}を通じてインスタンスを作成する.
-     [/lang]
-     [lang:en]
-     * Class to wrap audio elements.
-     *
-     * Safari, Chrome, Firefox, Opera, and IE all play MP3 files
-     * (Firefox and Opera play via Flash). WAVE files can be played on
-     * Safari, Chrome, Firefox, and Opera. When the browser is not compatible with
-     * the used codec the file will not play.
-     *
-     * Instances are created not via constructor but via {@link enchant.DOMSound.load}.
-     [/lang]
-     [lang:de]
-     * Klasse die eine Hüllenklasse (Wrapper) für Audio Elemente darstellt.
-     *
-     * Safari, Chrome, Firefox, Opera, und IE können alle MP3 Dateien abspielen
-     * (Firefox und Opera spielen diese mit Hilfe von Flash ab). WAVE Dateien können
-     * Safari, Chrome, Firefox, and Opera abspielen. Sollte der Browser nicht mit
-     * dem genutzten Codec kompatibel sein, wird die Datei nicht abgespielt.
-     *
-     * Instanzen dieser Klasse werden nicht mit Hilfe des Konstruktors, sondern mit
-     * {@link enchant.DOMSound.load} erstellt.
-     [/lang]
      * @constructs
      */
     initialize: function() {
         enchant.EventTarget.call(this);
         /**
-         [lang:ja]
          * Soundの再生時間 (秒).
-         [/lang]
-         [lang:en]
-         * Sound file duration (seconds).
-         [/lang]
-         [lang:de]
-         * Die länge der Sounddatei in Sekunden.
-         [/lang]
          * @type {Number}
          */
         this.duration = 0;
         throw new Error("Illegal Constructor");
     },
     /**
-     [lang:ja]
      * 再生を開始する.
-     [/lang]
-     [lang:en]
-     * Begin playing.
-     [/lang]
-     [lang:de]
-     * Startet die Wiedergabe.
-     [/lang]
      */
     play: function() {
         if (this._element) {
@@ -6232,15 +5247,7 @@ enchant.DOMSound = enchant.Class.create(enchant.EventTarget, {
         }
     },
     /**
-     [lang:ja]
      * 再生を中断する.
-     [/lang]
-     [lang:en]
-     * Pause playback.
-     [/lang]
-     [lang:de]
-     * Pausiert die Wiedergabe.
-     [/lang]
      */
     pause: function() {
         if (this._element) {
@@ -6248,33 +5255,15 @@ enchant.DOMSound = enchant.Class.create(enchant.EventTarget, {
         }
     },
     /**
-     [lang:ja]
      * 再生を停止する.
-     [/lang]
-     [lang:en]
-     * Stop playing.
-     [/lang]
-     [lang:de]
-     * Stoppt die Wiedergabe.
-     [/lang]
      */
     stop: function() {
         this.pause();
         this.currentTime = 0;
     },
     /**
-     [lang:ja]
      * Soundを複製する.
      * @return {enchant.DOMSound} 複製されたSound.
-     [/lang]
-     [lang:en]
-     * Create a copy of this Sound object.
-     * @return {enchant.DOMSound} Copied Sound.
-     [/lang]
-     [lang:de]
-     * Erstellt eine Kopie dieses Soundobjektes.
-     * @return {enchant.DOMSound} Kopiertes Sound Objekt.
-     [/lang]
      */
     clone: function() {
         var clone;
@@ -6292,15 +5281,7 @@ enchant.DOMSound = enchant.Class.create(enchant.EventTarget, {
         return clone;
     },
     /**
-     [lang:ja]
      * 現在の再生位置 (秒).
-     [/lang]
-     [lang:en]
-     * Current playback position (seconds).
-     [/lang]
-     [lang:de]
-     * Aktuelle Wiedergabeposition (seconds).
-     [/lang]
      * @type {Number}
      */
     currentTime: {
@@ -6314,15 +5295,7 @@ enchant.DOMSound = enchant.Class.create(enchant.EventTarget, {
         }
     },
     /**
-     [lang:ja]
      * ボリューム. 0 (無音) ～ 1 (フルボリューム).
-     [/lang]
-     [lang:en]
-     * Volume. 0 (muted) ～ 1 (full volume).
-     [/lang]
-     [lang:de]
-     * Lautstärke. 0 (stumm) ～ 1 (volle Lautstärke).
-     [/lang]
      * @type {Number}
      */
     volume: {
@@ -6338,27 +5311,16 @@ enchant.DOMSound = enchant.Class.create(enchant.EventTarget, {
 });
 
 /**
- [lang:ja]
  * 音声ファイルを読み込んでSoundオブジェクトを作成する.
  *
  * @param {String} src ロードする音声ファイルのパス.
  * @param {String} [type] 音声ファイルのMIME Type.
- [/lang]
- [lang:en]
- * Loads an audio file and creates Sound object.
- *
- * @param {String} src Path of the audio file to be loaded.
- * @param {String} [type] MIME Type of the audio file.
- [/lang]
- [lang:de]
- * Läd eine Audio Datei und erstellt ein Sound objekt.
- *
- * @param {String} src Pfad zu der zu ladenden Audiodatei.
- * @param {String} [type] MIME Type der Audtiodatei.
- [/lang]
+ * @param {Function} callback ロード完了時のコールバック.
+ * @param {Function} [onerror] ロード失敗時のコールバック.
+ * @return {enchant.DOMSound} DOMSound
  * @static
  */
-enchant.DOMSound.load = function(src, type, callback) {
+enchant.DOMSound.load = function(src, type, callback, onerror) {
     if (type == null) {
         var ext = enchant.Core.findExt(src);
         if (ext) {
@@ -6368,12 +5330,12 @@ enchant.DOMSound.load = function(src, type, callback) {
         }
     }
     type = type.replace('mp3', 'mpeg').replace('m4a', 'mp4');
+    onerror = onerror || function() {};
 
     var sound = Object.create(enchant.DOMSound.prototype);
     enchant.EventTarget.call(sound);
-    sound.addEventListener('load', function() {
-        callback.call(enchant.Core.instance);
-    });
+    sound.addEventListener('load', callback);
+    sound.addEventListener('error', onerror);
     var audio = new Audio();
     if (!enchant.ENV.SOUND_ENABLED_ON_MOBILE_SAFARI &&
         enchant.ENV.VENDOR_PREFIX === 'webkit' && enchant.ENV.TOUCH_ENABLED) {
@@ -6390,7 +5352,10 @@ enchant.DOMSound.load = function(src, type, callback) {
             audio.load();
             audio.autoplay = false;
             audio.onerror = function() {
-                throw new Error('Cannot load an asset: ' + audio.src);
+                var e = new enchant.Event(enchant.Event.ERROR);
+                e.message = 'Cannot load an asset: ' + audio.src;
+                enchant.Core.instance.dispatchEvent(e);
+                sound.dispatchEvent(e);
             };
             sound._element = audio;
         } else if (type === 'audio/mpeg') {
@@ -6454,9 +5419,9 @@ enchant.WebAudioSound = enchant.Class.create(enchant.EventTarget, {
         if(!window.webkitAudioContext){
             throw new Error("This browser does not support WebAudio API.");
         }
-        var actx = enchant.WebAudioSound.audioContext;
         enchant.EventTarget.call(this);
-        this.src = actx.createBufferSource();
+        this.context = enchant.WebAudioSound.audioContext;
+        this.src = this.context.createBufferSource();
         this.buffer = null;
         this._volume = 1;
         this._currentTime = 0;
@@ -6464,24 +5429,29 @@ enchant.WebAudioSound = enchant.Class.create(enchant.EventTarget, {
         this.connectTarget = enchant.WebAudioSound.destination;
     },
     play: function(dup) {
-        var actx = enchant.WebAudioSound.audioContext;
-        if (this._state === 2) {
-            this.src.connect(this.connectTarget);
-        } else {
-            if (this._state === 1 && !dup) {
-                this.src.disconnect(this.connectTarget);
-            }
-            this.src = actx.createBufferSource();
-            this.src.buffer = this.buffer;
-            this.src.gain.value = this._volume;
-            this.src.connect(this.connectTarget);
-            this.src.noteOn(0);
+        if (this._state === 1 && !dup) {
+            this.src.disconnect(this.connectTarget);
         }
+        if (this._state !== 2) {
+            this._currentTime = 0;
+        }
+        var offset = this._currentTime;
+        var actx = this.context;
+        this.src = actx.createBufferSource();
+        this.src.buffer = this.buffer;
+        this.src.gain.value = this._volume;
+        this.src.connect(this.connectTarget);
+        this.src.noteGrainOn(0, offset, this.buffer.duration - offset - 1.192e-7);
+        this._startTime = actx.currentTime - this._currentTime;
         this._state = 1;
     },
     pause: function() {
-        var actx = enchant.WebAudioSound.audioContext;
-        this.src.disconnect(this.connectTarget);
+        var currentTime = this.currentTime;
+        if (currentTime === this.duration) {
+            return;
+        }
+        this.src.noteOff(0);
+        this._currentTime = currentTime;
         this._state = 2;
     },
     stop: function() {
@@ -6493,10 +5463,10 @@ enchant.WebAudioSound = enchant.Class.create(enchant.EventTarget, {
         sound.buffer = this.buffer;
         return sound;
     },
-    dulation: {
+    duration: {
         get: function() {
             if (this.buffer) {
-                return this.buffer.dulation;
+                return this.buffer.duration;
             } else {
                 return 0;
             }
@@ -6516,38 +5486,46 @@ enchant.WebAudioSound = enchant.Class.create(enchant.EventTarget, {
     },
     currentTime: {
         get: function() {
-            window.console.log('currentTime is not allowed');
-            return this._currentTime;
+            return Math.max(0, Math.min(this.duration, this.src.context.currentTime - this._startTime));
         },
         set: function(time) {
-            window.console.log('currentTime is not allowed');
             this._currentTime = time;
+            if (this._state !== 2) {
+                this.play(false);
+            }
         }
     }
 });
 
-enchant.WebAudioSound.load = function(src, type, callback) {
-    var actx = enchant.WebAudioSound.audioContext;
-    var xhr = new XMLHttpRequest();
+enchant.WebAudioSound.load = function(src, type, callback, onerror) {
+    var canPlay = (new Audio()).canPlayType(type);
     var sound = new enchant.WebAudioSound();
-    var mimeType = 'audio/' + enchant.Core.findExt(src);
-    // TODO check Audio.canPlayType(mimeType)
-    xhr.responseType = 'arraybuffer';
-    xhr.open('GET', src, true);
-    xhr.onload = function() {
-        actx.decodeAudioData(
-            xhr.response,
-            function(buffer) {
+    onerror = onerror || function() {};
+    sound.addEventListener(enchant.Event.LOAD, callback);
+    sound.addEventListener(enchant.Event.ERROR, onerror);
+    function dispatchErrorEvent() {
+        var e = new enchant.Event(enchant.Event.ERROR);
+        e.message = 'Cannot load an asset: ' + src;
+        enchant.Core.instance.dispatchEvent(e);
+        sound.dispatchEvent(e);
+    }
+    var actx, xhr;
+    if (canPlay === 'maybe' || canPlay === 'probably') {
+        actx = enchant.WebAudioSound.audioContext;
+        xhr = new XMLHttpRequest();
+        xhr.open('GET', src, true);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = function() {
+            actx.decodeAudioData(xhr.response, function(buffer) {
                 sound.buffer = buffer;
-                callback.call(enchant.Core.instance);
-            },
-            function(error) {
-                // TODO change to enchant Error
-                window.console.log(error);
-            }
-        );
-    };
-    xhr.send(null);
+                sound.dispatchEvent(new enchant.Event(enchant.Event.LOAD));
+            }, dispatchErrorEvent);
+        };
+        xhr.onerror = dispatchErrorEvent;
+        xhr.send(null);
+    } else {
+        setTimeout(dispatchErrorEvent,  50);
+    }
     return sound;
 };
 
@@ -6570,17 +5548,12 @@ enchant.Sound = window.AudioContext && enchant.ENV.USE_WEBAUDIO ? enchant.WebAud
  */
 
 /**
- * [lang:ja]
  * イージング関数ライブラリ
  * {@link enchant.Easing} 以下にある関数は全て t(現在の時刻), b(初期値), c(変化後の値), d(値の変化にかける時間) の引数を取り、指定した時刻に取る値を返す。
  * ActionScript で広く使われている Robert Penner による Easing Equations を JavaScript に移植した。
  *
  * @see http://www.robertpenner.com/easing/
  * @see http://www.robertpenner.com/easing/penner_chapter7_tweening.pdf
- *
- * [/lang]
- * [lang:en]
- * [/lang]
  * Easing function library, from "Easing Equations" by Robert Penner.
  * @type {Object}
  * @namespace
@@ -7033,13 +6006,7 @@ enchant.ActionEventTarget = enchant.Class.create(enchant.EventTarget, {
     /**
      * @name enchant.ActionEventTarget
      * @class
-     * [lang:ja]
      * {@link enchant.Action} クラス向けに拡張された {@link enchant.EventTarget} クラス .
-     *
-     * [/lang]
-     * [lang:en]
-     * EventTarget which can change the context of event listeners
-     * [/lang]
      * @constructs
      * @extends enchant.EventTarget
      */
@@ -7081,7 +6048,6 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
     /**
      * @name enchant.Timeline
      * @class
-     * [lang:ja]
      * アニメーションを管理するためのクラス.
      *
      * 操作するノードひとつに対して、必ずひとつのタイムラインが対応する。
@@ -7093,22 +6059,6 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
      * タイムラインクラスはフレームとタイムのアニメーションができる。
      * @param node 操作の対象となるノード
      * @param [unitialized] このパラメータがtrueならば、最初のaddメソッドが呼ばれる時nodeにenchant.Event.ENTER_FRAMEイベントリスナを追加される。
-     * [/lang]
-     * [lang:en]
-     * Time-line class.
-     * Class for managing the action.
-     * For one node to manipulate the timeline of one must correspond.
-     *
-          * Reading a tl.enchant.js, all classes (Group, Scene, Entity, Label, Sprite) of the Node class that inherits
-          * Tlthe property, an instance of the Timeline class is generated.
-          * Time-line class has a method to add a variety of actions to himself,
-          * entities can be animated and various operations by using these briefly.
-          * You can choose time based and frame based(default) animation.
-     *
-     * @param node target node
-     * @param [unitialized] if this param is true, when add method called in the first time,
-     * enchant.Event.ENTER_FRAME event listener will be added to node (for reducing unused event listeners)
-     * [/lang]
      * @constructs
      */
     initialize: function(node) {
@@ -7141,23 +6091,18 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         }
     },
     /**
-     * [lang:ja]
      * 一つのenchant.Event.ENTER_FRAMEイベントはアニメーションに一つの時間単位になる。 （デフォルト）
-     * [/lang]
      */
     setFrameBased: function() {
         this.isFrameBased = true;
     },
     /**
-     * [lang:ja]
      * 一つのenchant.Event.ENTER_FRAMEイベントはアニメーションに前のフレームから経過した時間になる。
-     * [/lang]
      */
     setTimeBased: function() {
         this.isFrameBased = false;
     },
     /**
-     * [lang:ja]
      * キューの先頭にあるアクションを終了し、次のアクションへ移行する。
      * アクションの中から呼び出されるが、外から呼び出すこともできる。
      *
@@ -7166,9 +6111,6 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
      * ex.
      *   sprite.tl.then(function A(){ .. }).then(function B(){ .. });
      * と記述した場合、最初のフレームで A・B の関数どちらも実行される
-     * [/lang]
-     * [lang:en]
-     * [/lang]
      */
     next: function(remainingTime) {
         var e, action = this.queue.shift();
@@ -7202,11 +6144,9 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         }
     },
     /**
-     * [lang:ja]
      * ターゲットの enterframe イベントのリスナとして登録される関数
      * 1フレーム経過する際に実行する処理が書かれている。
      * (キューの先頭にあるアクションに対して、actionstart/actiontickイベントを発行する)
-     * [/lang]
      */
     tick: function(enterFrameEvent) {
         if (this.paused) {
@@ -7260,29 +6200,23 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * アクションを簡単に追加するためのメソッド。
      * 実体は add メソッドのラッパ。
      * @param params アクションの設定オブジェクト
-     * [/lang]
      */
     action: function(params) {
         return this.add(new enchant.Action(params));
     },
     /**
-     * [lang:ja]
      * トゥイーンを簡単に追加するためのメソッド。
      * 実体は add メソッドのラッパ。
      * @param params トゥイーンの設定オブジェクト。
-     * [/lang]
      */
     tween: function(params) {
         return this.add(new enchant.Tween(params));
     },
     /**
-     * [lang:ja]
      * タイムラインのキューをすべて破棄する。終了イベントは発行されない。
-     * [/lang]
      */
     clear: function() {
         var e = new enchant.Event("removedfromtimeline");
@@ -7296,12 +6230,10 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * タイムラインを早送りする。
      * 指定したフレーム数が経過したのと同様の処理を、瞬時に実行する。
      * 巻き戻しはできない。
      * @param frames
-     * [/lang]
      */
     skip: function(frames) {
         var event = new enchant.Event("enterframe");
@@ -7317,9 +6249,7 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * タイムラインの実行を一時停止する
-     * [/lang]
      */
     pause: function() {
         if (!this.paused) {
@@ -7329,9 +6259,7 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * タイムラインの実行を再開する
-     * [/lang]
      */
     resume: function() {
         if (this.paused) {
@@ -7341,30 +6269,24 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * タイムラインをループさせる。
      * ループしているときに終了したアクションは、タイムラインから取り除かれた後
      * 再度タイムラインに追加される。このアクションは、ループが解除されても残る。
-     * [/lang]
      */
     loop: function() {
         this.looped = true;
         return this;
     },
     /**
-     * [lang:ja]
      * タイムラインのループを解除する。
-     * [/lang]
      */
     unloop: function() {
         this.looped = false;
         return this;
     },
     /**
-     * [lang:ja]
      * 指定したフレーム数だけ待ち、何もしないアクションを追加する。
      * @param time
-     * [/lang]
      */
     delay: function(time) {
         this.add(new enchant.Action({
@@ -7373,20 +6295,16 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * @ignore
      * @param time
-     * [/lang]
      */
     wait: function(time) {
         // reserved
         return this;
     },
     /**
-     * [lang:ja]
      * 関数を実行し、即時に次のアクションに移るアクションを追加する。
      * @param func
-     * [/lang]
      */
     then: function(func) {
         var timeline = this;
@@ -7400,17 +6318,14 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * then メソッドのシノニム。
      * 関数を実行し、即時に次のアクションに移る。
      * @param func
-     * [/lang]
      */
     exec: function(func) {
         this.then(func);
     },
     /**
-     * [lang:ja]
      * 実行したい関数を、フレーム数をキーとした連想配列(オブジェクト)で複数指定し追加する。
      * 内部的には delay, then を用いている。
      *
@@ -7421,7 +6336,6 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
      *    30: function(){ 30フレーム経過した後に実行される関数 }
      * });
      * @param cue キューオブジェクト
-     * [/lang]
      */
     cue: function(cue) {
         var ptr = 0;
@@ -7434,11 +6348,9 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         }
     },
     /**
-     * [lang:ja]
      * ある関数を指定したフレーム数繰り返し実行するアクションを追加する。
      * @param func 実行したい関数
      * @param time 持続フレーム数
-     * [/lang]
      */
     repeat: function(func, time) {
         this.add(new enchant.Action({
@@ -7450,13 +6362,11 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * 複数のアクションを並列で実行したいときに指定する。
      * and で結ばれたすべてのアクションが終了するまで次のアクションには移行しない
      * @example
      * sprite.tl.fadeIn(30).and.rotateBy(360, 30);
      * 30フレームでフェードインしながら 360度回転する
-     * [/lang]
      */
     and: function() {
         var last = this.queue.pop();
@@ -7490,7 +6400,6 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * true値 が返るまで、関数を毎フレーム実行するアクションを追加する。
      * @example
      * sprite.tl.waitUntil(function(){
@@ -7499,7 +6408,6 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
      * // x 座標が負になるまで毎フレーム x座標を減算し続ける
      *
      * @param func 実行したい関数
-     * [/lang]
      */
     waitUntil: function(func) {
         var timeline = this;
@@ -7514,12 +6422,10 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * Entity の不透明度をなめらかに変えるアクションを追加する。
      * @param opacity 目標の不透明度
      * @param time フレーム数
      * @param [easing] イージング関数
-     * [/lang]
      */
     fadeTo: function(opacity, time, easing) {
         this.tween({
@@ -7530,35 +6436,29 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         return this;
     },
     /**
-     * [lang:ja]
      * Entity をフェードインするアクションを追加する。
      * fadeTo(1) のエイリアス。
      * @param time フレーム数
      * @param [easing] イージング関数
-     * [/lang]
      */
     fadeIn: function(time, easing) {
         return this.fadeTo(1, time, easing);
     },
     /**
-     * [lang:ja]
      * Entity をフェードアウトするアクションを追加する。
      * fadeTo(1) のエイリアス。
      * @param time フレーム数
      * @param [easing] イージング関数
-     * [/lang]
      */
     fadeOut: function(time, easing) {
         return this.fadeTo(0, time, easing);
     },
     /**
-     * [lang:ja]
      * Entity の位置をなめらかに移動させるアクションを追加する。
      * @param x 目標のx座標
      * @param y 目標のy座標
      * @param time フレーム数
      * @param [easing] イージング関数
-     * [/lang]
      */
     moveTo: function(x, y, time, easing) {
         return this.tween({
@@ -7569,12 +6469,10 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity のx座標をなめらかに変化させるアクションを追加する。
      * @param x
      * @param time
      * @param [easing]
-     * [/lang]
      */
     moveX: function(x, time, easing) {
         return this.tween({
@@ -7584,12 +6482,10 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity のy座標をなめらかに変化させるアクションを追加する。
      * @param y
      * @param time
      * @param [easing]
-     * [/lang]
      */
     moveY: function(y, time, easing) {
         return this.tween({
@@ -7599,14 +6495,12 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity の位置をなめらかに変化させるアクションを追加する。
      * 座標は、アクション開始時からの相対座標で指定する。
      * @param x
      * @param y
      * @param time
      * @param [easing]
-     * [/lang]
      */
     moveBy: function(x, y, time, easing) {
         return this.tween({
@@ -7621,9 +6515,7 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity の opacity を0にする (即時)
-     * [/lang]
      */
     hide: function() {
         return this.then(function() {
@@ -7631,9 +6523,7 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity の opacity を1にする (即時)
-     * [/lang]
      */
     show: function() {
         return this.then(function() {
@@ -7641,12 +6531,10 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity をシーンから削除する。
      * シーンから削除された場合、 enterframe イベントは呼ばれなくなるので、
      * タイムラインも止まることに注意。
      * これ以降のアクションは、再度シーンに追加されるまで実行されない。
-     * [/lang]
      */
     removeFromScene: function() {
         return this.then(function() {
@@ -7654,13 +6542,11 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity をなめらかに拡大・縮小するアクションを追加する。
      * @param scaleX 縮尺
      * @param [scaleY] 縮尺。省略した場合 scaleX と同じ
      * @param time
      * @param [easing]
-     * [/lang]
      */
     scaleTo: function(scale, time, easing) {
         if (typeof easing === "number") {
@@ -7679,14 +6565,12 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity をなめらかに拡大・縮小させるアクションを追加する。
      * 相対縮尺 (ex. アクション開始時の縮尺の n 倍) で指定する。
      * @param scaleX 相対縮尺
      * @param [scaleY] 相対縮尺。省略した場合 scaleX と同じ
      * @param time
      * @param [easing]
-     * [/lang]
      */
     scaleBy: function(scale, time, easing) {
         if (typeof easing === "number") {
@@ -7713,12 +6597,10 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity をなめらかに回転させるアクションを追加する。
      * @param deg 目標の回転角度 (弧度法: 1回転を 360 とする)
      * @param time フレーム数
      * @param [easing] イージング関数
-     * [/lang]
      */
     rotateTo: function(deg, time, easing) {
         return this.tween({
@@ -7728,13 +6610,11 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     },
     /**
-     * [lang:ja]
      * Entity をなめらかに回転させるアクションを追加する。
      * 角度は相対角度 (アクション開始時の角度から更に n 度) で指定する
      * @param deg 目標の相対角度 (弧度法: 1回転を 360 とする)
      * @param time フレーム数
      * @param [easing] イージング関数
-     * [/lang]
      */
     rotateBy: function(deg, time, easing) {
         return this.tween({
@@ -7746,6 +6626,7 @@ enchant.Timeline = enchant.Class.create(enchant.EventTarget, {
         });
     }
 });
+
 /**
  * @scope enchant.Action.prototype
  * @type {*}
@@ -7755,7 +6636,6 @@ enchant.Action = enchant.Class.create(enchant.ActionEventTarget, {
     /**
      * @name enchant.Action
      * @class
-     * [lang:ja]
      * アニメーションタイムラインを構成する、実行したい処理を指定するためのクラス.
      *
      * タイムラインに追加されたアクションは順に実行される。
@@ -7771,25 +6651,6 @@ enchant.Action = enchant.Class.create(enchant.ActionEventTarget, {
      * @config {function} [onactionstart] アクションが開始される時のイベントリスナ
      * @config {function} [onactiontick] アクションが1フレーム経過するときのイベントリスナ
      * @config {function} [onactionend] アクションがが終了する時のイベントリスナ
-     * [/lang]
-     * [lang:en]
-     * Action class.
-     * Actions are units that make up the time line,
-     * It is a unit used to specify the action you want to perform.
-     * Action has been added to the time line is performed in order.
-     *
-     * Actionstart, actiontick event is fired when the action is started and stopped,
-     * When one frame has elapsed actiontick event is also issued.
-     * Specify the action you want to perform as a listener for these events.
-     * The transition to the next action automatically the number of frames that are specified in the time has elapsed.
-     *
-     * @constructs
-     * @param param
-     * @config {integer} [time] The number of frames that will last action. infinite length is specified null
-     * @config {function} [onactionstart] Event listener for when the action is initiated
-     * @config {function} [onactiontick] Event listener for when the action has passed one frame
-     * @config {function} [onactionend] Event listener for when the action is finished
-     * [/lang]
      * @constructs
      */
     initialize: function(param) {
@@ -7832,6 +6693,7 @@ enchant.Action = enchant.Class.create(enchant.ActionEventTarget, {
 
     }
 });
+
 /**
  * @scope enchant.ParallelAction.prototype
  */
@@ -7839,10 +6701,8 @@ enchant.ParallelAction = enchant.Class.create(enchant.Action, {
     /**
      * @name enchant.ParallelAction
      * @class
-     * [lang:ja]
      * アクションを並列で実行するためのアクション。
      * 子アクションを複数持つことができる。
-     * [/lang]
      * @constructs
      * @extends enchant.Action
      */
@@ -7851,21 +6711,11 @@ enchant.ParallelAction = enchant.Class.create(enchant.Action, {
         var timeline = this.timeline;
         var node = this.node;
         /**
-         * [lang:ja]
          * 子アクション
-         * [/lang]
-         * [lang:en]
-         * Children Actions
-         * [/lang]
          */
         this.actions = [];
         /**
-         * [lang:ja]
          * 実行が終了したアクション
-         * [/lang]
-         * [lang:en]
-         * Removed actions
-         * [/lang]
          */
         this.endedActions = [];
         var that = this;
@@ -7927,7 +6777,6 @@ enchant.Tween = enchant.Class.create(enchant.Action, {
     /**
      * @name enchant.Tween
      * @class
-     * [lang:ja]
      * {@link enchant.Action} を継承した、オブジェクトの特定のプロパティを、なめらかに変更したい時に用いるためのアクションクラス.
      * アクションを扱いやすく拡張したクラス.
      *
@@ -7941,7 +6790,6 @@ enchant.Tween = enchant.Class.create(enchant.Action, {
      * @constructs
      * @config {time}
      * @config {easing} [function]
-     * [/lang]
      */
     initialize: function(params) {
         var origin = {};
@@ -7995,6 +6843,7 @@ enchant.Tween = enchant.Class.create(enchant.Action, {
         });
     }
 });
+
 /**
  *
  */
